@@ -1,0 +1,5 @@
+if (! $?ORIG_CLASSPATH) then
+    setenv ORIG_CLASSPATH $CLASSPATH
+endif
+
+setenv CLASSPATH $ORIG_CLASSPATH":"`pwd`/classes

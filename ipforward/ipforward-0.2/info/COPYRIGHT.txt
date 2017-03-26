@@ -1,0 +1,6 @@
+Copyright for IPForward
+-----------------------
+
+IPForward is copyright 1999 Dan Bornstein, danfuzz@milk.com. All rights
+reserved. (Shrill TV degreaser.) This code may be used for any purpose
+whatsoever, so long as credit is appropriately given to the author.

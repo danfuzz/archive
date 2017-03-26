@@ -1,0 +1,296 @@
+<!doctype html>
+<html>
+<head>
+<title>ANTLR Adder Tutorial</title>
+</head>
+
+<body>
+<h1 align=center>ANTLR Adder Tutorial</h1>
+<h2 align=center>Extent Tracking, Tokens with Values, and Error Reporting</h2>
+<h2 align=center>version 1.3</h2>
+
+<h3 align=center>by Dan Bornstein, 
+<code><a href="mailto:danfuzz@milk.com">danfuzz@milk.com</a></code></h3>
+<h3 align=center>3-Feb-2001</h3>
+
+<p><hr></p>
+
+<h2 align=center>Introduction</h2>
+
+<p>This is a tutorial covering three different things that one often wants
+to do with an <a href="http://www.antlr.org/">ANTLR</a> parser:</p>
+
+<ol>
+  <li>Maintain full extent information (start position and end position as
+  well as file of origin) with tokens. In this case, it is used to make
+  error reports more informative. As shipped, ANTLR only automatically
+  keeps track of the start positions of tokens and doesn't know what
+  file a token originally came from.</li>
+
+  <li>Associate an arbitrary value with each token. In this case, they are
+  used to hold the parsed values of literals and the intermediate results
+  of computation.</li>
+
+  <li>Label ASTs with tokens, rather than just with text and a token type.
+  In this case, this functionality is used for a couple reasons, including
+  using the token associated with an AST to hold the result of computing
+  the expression it denotes and using the tokens associated with an AST and
+  all of its children in order to report the full extent of an error.</li>
+</ol>
+
+<p>The code presented here was written to use ANTLR 2.7.1, so things
+may not work if you are using an older version, or may work better if
+you are using a newer version.</p>
+
+<h2 align=center>The Example</h2>
+
+<p>This tutorial is mostly embodied by the comments in the source code
+itself, but it will help to know what this program actually
+accomplishes.</p>
+
+<p>The program, as its name implies, knows how to add. In particular, it
+can add integers by performing a mathematical sum operation, and it can add
+strings by performing concatenation. The same operator, <code>"+"</code>
+suffices for both operations.</p>
+
+<p>Additionally, it can convert numbers into strings, denoted with the
+<code>"$"</code> prefix operator, and it can convert strings into numbers,
+denoted with the <code>"#"</code> prefix operator. And, finally, one may
+group operations with parentheses.</p>
+
+<p>Number literals are simple a sequence of digits, optionally preceded by
+a minus sign. String literals are a sequence of arbitrary 7-bit ASCII
+characters, enclosed in double quotes, with several standard C-like
+escapes (e.g., <code>"\n"</code>) supported.</p>
+
+<p>A program in this language consists of a series of expressions, each
+followed by a semicolon. The result of executing a program is that the
+value of each expression is written to standard output, one per line.
+String values are printed with double quotes around them, numeric values
+are printed as-is, and any expression that contained an error is printed
+out as <code>"(error)"</code>.</p>
+
+<p>If any expression printed out as <code>"(error)"</code>, then before any
+expression values are printed, there will be one or more error lines. Each
+one is of the following form, which is identical to the form of a Caml
+error (which the Emacs error parser already understands):</p>
+
+<blockquote><code>File "<i>file-name</i>", line<i>[</i>s<i>]</i>
+<i>start[</i>-<i>end]</i>, character<i>[</i>s<i>]</i> 
+<i>start[</i>-<i>end]</i></code></blockquote>
+
+<p>Below the error message, is the snippet of source that contains
+the error, "underlined" by using dashes on the following line. For
+example:</p>
+
+<table align=center bgcolor="#e0e0e0" border=1 cellpadding=5 cellspacing=1
+width=85%>
+<tr>
+ <td><pre>File "test.txt", line 14, columns 8-17: Type mismatch for add operator.
+  1 + ("foo" + 4);
+       ---------</pre></td>
+</tr>
+</table>
+
+<p>The error messages are as follows:</p>
+
+<ul>
+  <li><code>"Can only numberify strings."</code><br>
+  This is issued if you try to apply the <code>"#"</code> operator 
+  to an expression whose value is already a number.</li>
+
+  <li><code>"Can only stringify numbers."</code><br>
+  This is issued if you try to apply the <code>"$"</code> operator
+  to an expression whose value is already a string.</li>
+
+  <li><code>"Type mismatch for add operator."</code><br>
+  This is issued if you try to apply the <code>"+"</code> operator
+  to a string and a number, as opposed to a pair of strings or a pair 
+  of numbers.</li>
+</ul>
+
+<p>Here is an example input file:</p>
+
+<table align=center bgcolor="#e0e0e0" border=1 cellpadding=5 cellspacing=1
+width=85%>
+<tr>
+ <td><pre>1;
+  (2);
+    #"3";
+      $4;
+        2 + 3;
+      "s" + "ix";
+    #"4" + 3;
+  "e" + $(-1 + 2) + "ght";
+#("4" + "2") + -33;
+  #10;
+    $"eleven";
+      12 + "twelve";
+    "thirteen" + 13;
+  1 + ("foo" + 4);
+(1 +
+2 +
+3 +
+4 +
+5)
++
+("foo" +
+ "bar" +
+ "baz");</pre></td>
+</tr>
+</table>
+
+<p>Here is the output it generates (assuming its name is
+<code>test.txt</code>):</p>
+  
+<table align=center bgcolor="#e0e0e0" border=1 cellpadding=5 cellspacing=1
+width=85%>
+<tr>
+ <td><pre>File "test.txt", line 10, columns 3-6: Can only numberify strings.
+  #10;
+  ---
+
+File "test.txt", line 11, columns 5-14: Can only stringify numbers.
+    $"eleven";
+    ---------
+
+File "test.txt", line 12, columns 7-20: Type mismatch for add operator.
+      12 + "twelve";
+      -------------
+
+File "test.txt", line 13, columns 5-20: Type mismatch for add operator.
+    "thirteen" + 13;
+    ---------------
+
+File "test.txt", line 14, columns 8-17: Type mismatch for add operator.
+  1 + ("foo" + 4);
+       ---------
+
+File "test.txt", lines 15-23, columns 2-7: Type mismatch for add operator.
+(1 +
+ ---
+...
+ "baz");
+------
+
+1
+2
+3
+"4"
+5
+"six"
+7
+"e1ght"
+9
+(error)
+(error)
+(error)
+(error)
+(error)
+(error)</pre></td>
+</tr>
+</table>
+
+<h2 align=center>Building It</h2>
+
+<p>In order to build this program:</p>
+
+<ol>
+  <li>Make sure your Java <code>CLASSPATH</code> includes both an ANTLR
+  installation and the directory where the example source code lives.</li>
+
+  <li>Run ANTLR on the file <code>"add.g"</code>.</li>
+
+  <li>Compile all of the Java source files, including the ones just
+  generated by ANTLR.</li>
+
+  <li>Run the class <code>Adder</code> (in the anonymous, top-level
+  package), giving it a source file as its commandline argument.</li>
+</ol>
+
+<p>For example, on my machine, the ANTLR distribution is located in
+<code>/usr/local/lib/antlr</code>, and I run the <code>bash</code> shell,
+so I can do this:</p>
+
+<table align=center bgcolor="#e0e0e0" border=1 cellpadding=5 cellspacing=1
+width=85%>
+<tr>
+ <td><pre>CLASSPATH=/usr/local/lib/antlr:.
+export CLASSPATH
+java antlr.Tool add.g
+javac -d . *.java
+java Adder test.txt</pre></td>
+</tr>
+</table>
+
+<p>A <code>Makefile</code> is provided with this tutorial, which may
+work for you after a modicum of tweaking.</p>
+
+<h2 align=center>Brief Tour of the Source</h2>
+
+<p>Here is a list of all of the source files contained in this example, and
+a brief description of each. See the comments in the files themselves for
+more details.</p>
+
+<ul>
+  <li><code><a href="add.g">add.g</a></code>: The ANTLR grammar file.</li>
+
+  <li><code><a href="Adder.java">Adder.java</a></code>: This just has the
+  <code>main()</code> method for the program. I suggest that you start your
+  tour of the code by reading this file.</li>
+
+  <li><code><a
+  href="ExtentLexerSharedInputState.java">ExtentLexerSharedInputState.java</a></code>:
+  This is a subclass of the ANTLR-provided class 
+  <code>LexerSharedInputState</code>, which is needed in order to expose 
+  accessors for the current line and column and relay information about
+  the name of the file being parsed.</li>
+
+  <li><code><a href="ErrorFormatter.java">ErrorFormatter.java</a></code>: 
+  This class just contains a static method that does the full formatting
+  of error messages, including grabbing the text in error out of source
+  files.</li>
+
+  <li><code><a href="ExtentToken.java">ExtentToken.java</a></code>: This is
+  a subclass of the ANTLR-provided class <code>CommonToken</code>, which
+  has been augmented to maintain full extent information (start and
+  end position, as well as file of origin).</li>
+
+  <li><code><a href="Makefile">Makefile</a></code>: A simple Makefile,
+  which works for me but probably won't for you, at least unless you edit
+  the <code>ANTLR_HOME</code> definition.</li>
+
+  <li><code><a href="test.txt">test.txt</a></code>: A simple test program
+  to test the system with.</li>
+
+  <li><code><a href="TokenAST.java">TokenAST.java</a></code>: This is a
+  subclass of the ANTLR-provided class <code>BaseAST</code>, which, instead
+  of storing text and type directly (as ANTLR's <code>CommonAST</code>
+  does), simply points at a <code>Token</code> instance and refers to it as
+  needed.</li>
+
+  <li><code><a
+  href="ValueExtentToken.java">ValueExtentToken.java</a></code>: This is a
+  subclass of <code>ExtentToken</code> (above), which adds a field to
+  contain an arbitrary value.</li>
+</ul>
+
+<h2 align=center>Tarball</h2>
+
+<p>A tarball of this document and all of the source may be found in <a
+href="http://www.milk.com/kodebase/downloads/">the MILK Kodebase downloads
+directory</a>.</p>
+
+<h2 align=center>Copyright</h2>
+
+<p>I hereby place this tutorial, including all source code, in the public
+domain. However, it is my fervent hope that if you find this of use, you
+will see fit to give me a modicum of credit.</p>
+
+<p>Thanks.</p>
+
+<p>Dan Bornstein<br>
+<code>danfuzz@milk.com</code></p>
+
+</body>
+</html>

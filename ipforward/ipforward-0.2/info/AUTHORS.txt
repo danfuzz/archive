@@ -1,0 +1,4 @@
+Authors of IPForward
+--------------------
+
+Dan Bornstein, danfuzz@milk.com, http://www.milk.com/home/danfuzz/
