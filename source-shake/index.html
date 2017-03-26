@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<head>
+<title>The MILK Kodebase: Source Shake</title>
+</head>
+
+<body>
+<h1 align=center>The MILK Kodebase: Source Shake</h1>
+
+<p>Source Shake is a source-level tree-shaker for Java code. You give it a set
+of "library" source and a set of "your" source, and it tells you which
+files in the "library" are required by "your" files, or copies those files
+to the directory you specify. It finds files in the library directly
+required, as well as walking through the tree from those library files to
+the files <i>they</i> depend on, etc.</p>
+
+<p>This was originally written to be used with the
+<a href="http://www.antlr.org/">ANTLR</a> library, since for some reason the
+ANTLR folks don't separate the tool from the libraries required by the
+tool's output.</p>
+
+<h2 align=center>Download</h2>
+<ul>
+<li><a href="SourceShake.java">SourceShake.java</a></li>
+</ul>
+
+</body>
+</html>

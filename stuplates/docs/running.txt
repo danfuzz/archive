@@ -1,0 +1,32 @@
+Note that Stuplates requires a Java runtime version of 1.4 or later, as it
+uses some newer classes and methods, and the driver script is
+Unix-oriented. You don't need to use the script though; you can just invoke
+the jar file directly, in whatever way one does that on your platform.
+
+Place the script bin/stu in a directory in your PATH (such as /usr/local/bin),
+and place the library file lib/stu.jar in an adjacent lib directory (such as
+/usr/local/lib).
+
+Then run it like this:
+
+    stu --source=<source-name> --output-file=<output-file>
+    stu --source=<source-name> --output-dir=<output-dir>
+    stu --type=<type> ...
+    stu --profile-eval=<int> ...
+
+You can give it a source file or a source directory (all of whose contents
+will be processed). The source is taken to be a script or a template
+depending on its extension (".stu" for script and ".stut" for template).
+You can override this by specifying "--type=stu" or "--type=stut". If you
+omit the --source option, then input is read from the console. In this case,
+you must specify the type explicitly.
+
+If you omit an --output option, then output will be written to the console. 
+If you give it a source *file* and name an output *directory*, then the
+output file will be placed in that directory and its name will be the same
+as the source name but without the ".stu" or ".stut" extension.
+
+If you supply the --profile-eval option, then the input file you specify
+(must be a file, not a directory) will be parsed once but evaluated the
+number of times specified by the option. This is to aid in profiling the
+evaluation engine.

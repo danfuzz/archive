@@ -1,0 +1,108 @@
+Copyright (C) 2000, Dan Bornstein, danfuzz@milk.com. All Rights 
+Reserved. (Shrill TV degreaser.)
+
+This file is part of the MILK Kodebase. The contents of this file are
+subject to the MILK Kodebase Public License; you may not use this file
+except in compliance with the License. A copy of the MILK Kodebase Public
+License has been included with this distribution, and may be found in the
+file named "LICENSE.html". You may also be able to obtain a copy of the
+License at <http://www.milk.com/kodebase/legal/LICENSE.html>. Yum!
+
+The Plastic Manifesto
+---------------------
+
+by Dan Bornstein, danfuzz@milk.com
+13-nov-2000
+
+I have had an interest both in programming languages and music synthesis as
+long as I remember. I am enamored with the concepts behind modular
+synthesizers, but I have not yet found one that embodies the features I
+want in a package I like. I aim to rectify that situation.
+
+I found out about CSound in the late 1980s. CSound is extremely powerful,
+but I found its syntax to be impenetrable, and I never found a graphical
+front end that did it any justice.
+
+I first played with MAX in 1990. I found the ability to graphically depict
+interconnections absolutely wonderful. However, first and foremost, it is
+restricted to only operate on MIDI-like data; it doesn't have anything to
+do with waveform generation. But, also, I found the actual model of module
+intercommunication to be confusing and misleading (and poorly specified);
+it seemed that for anything of any reasonable complexity, it would have
+been easier to express it as a real program rather than as boxes-and-lines.
+MAX had a generic "arbitrary function" sort of box, but its use always felt
+clunky to me.
+
+More recently, there have been a number of graphical modular synthesizers
+being developed and/or sold. The thing that seems to be universally nice
+about the ones I've seen is that they provide a rich set of modules for one
+to choose from when building up a network. The things that seem to be
+universally bad about them are that, in order to construct a new module
+that is as efficient as a primitively-provided one, one must resort to
+out-of-model programming, and, relatedly, there is no simple formal
+semantics for the model itself. The particular thing I really dislike is
+that many of these systems force one to have a propagation delay between
+each module in a network, meaning that one *cannot*, for example, represent
+instantaneous mathematical calculations without cramming the entirety of
+such a calculation into a single graphical "box".
+
+None of the modern graphical modular synthesizers that I know of allow for
+a reasonable textual representation of a network. Sometimes, text is the
+way to go. I think it's better as a medium of interchange, too, making
+readily apparent any "hidden state" that a graphical representation might
+elide (and which it ought to elide). While it is nice that XML has arisen
+as a "universal" syntax for structured data, I do not think it is
+appropriate in this case. XML does not make for representing easily-written
+or easily-understood programming languages, and the activity of interest
+here is bona fide programming.
+
+All of the modern graphical modular synthesizer I know of are extremely
+platform-dependent. In particular, they are wedded to the graphical form,
+and written with a particular toolkit in mind. They are often restricted to
+only run on one OS platform because of this. CSound was good because it had
+no inherent UI; CSound was bad because it wasn't developed with having a UI
+in mind.
+
+A good modular synthesizer must be usable as a musical instrument in a
+performance. Therefore, it must be easy to take live input, set up live
+"controls", and produce live output.
+
+A good modular synthesizer in the form of a computer program must also be
+able to be used to generate an audio file as output with no direct live
+input, and do so in a reliable and reproducible manner. So, it must be able
+to process things such as sample and score input files. It should support
+at least one widely available format each for sampled audio data (such as
+AIFF or WAV) and for structured music data (such as MIDI type 1).
+
+Plastic aims to satisfy all of these requirements...eventually.
+
+It is to have a textual representation and a graphical representation, with
+a clearly stateable mapping between the two forms.
+
+In addition to having a rich set of primitives to make it easy to make
+interesting noise quickly, it is to have sufficient expressive power to
+produce the equivalent of most of the "complex" primitives totally within
+the programming model, well-enough defined semantics so that one could have
+confidence in doing so, and it should have a compiler which is sufficiently
+powerful that most of the time one is better off using the model than
+resorting to native code.
+
+The core execution engine of Plastic is to be as platform-independent as
+possible. It should be possible to hand a text file to the engine and have
+it produce an audio output file, on a machine that has no GUI and no audio
+devices.
+
+It should be straightforward to write graphical editors for Plastic files.
+It is fine for such editors to be extremely platform-dependent, since with
+today's situation with a profusion of GUIs (and no sufficiently expressive
+abstraction over them), the only reasonable means to give the user a
+pleasant experience is to code to a particular GUI toolkit.
+
+An interactive player component should be capable of rendering on-screen
+controls and responding to input from the mouse and other devices (such as
+a typewriter keyboard or MIDI input). As with graphical editors, it is fine
+for these interactive players to be platform-dependent. However, there
+should be a core notion expressible in the textual form of the language, in
+general terms, of a set of controls with something approximating a
+description of layout.
+

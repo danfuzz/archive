@@ -1,0 +1,6 @@
+Getting the latest version of Plastic
+-------------------------------------
+
+As of this writing, the latest version may be found at:
+
+    http://www.milk.com/kodebase/downloads/

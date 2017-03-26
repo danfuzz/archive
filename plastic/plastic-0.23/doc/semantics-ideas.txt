@@ -1,0 +1,229 @@
+Copyright (C) 2000, Dan Bornstein, danfuzz@milk.com. All Rights 
+Reserved. (Shrill TV degreaser.)
+
+This file is part of the MILK Kodebase. The contents of this file are
+subject to the MILK Kodebase Public License; you may not use this file
+except in compliance with the License. A copy of the MILK Kodebase Public
+License has been included with this distribution, and may be found in the
+file named "LICENSE.html". You may also be able to obtain a copy of the
+License at <http://www.milk.com/kodebase/legal/LICENSE.html>. Yum!
+
+Semantics Ideas For Plastic
+---------------------------
+Dan Bornstein, danfuzz@milk.com
+
+All entities are objects. An object consists of nothing but a set of named
+fields. The value associated with each of those fields is an object. The
+equivalent of a "method" is a field whose value is a function which, when
+applied, has the power to alter the internal state of the object it came
+from. Not all fields have to have functions as values. The standard "dot
+syntax" is used to refer to the fields of an object.
+
+    Example: If x is an object that has a field f, then one
+    refers to f with the expression x.f. If f has "method nature"
+    then it is in fact a function, and may be applied via the form
+    x.f().
+
+Some objects are "ports". A port is an object whose sole purpose is
+to bear a single value. The way to access that value is by referring
+to the "out" field of a given port object.
+
+    Example: If p is a port, then p.out is the current value of the port.
+
+Some ports are mutable. If a port is mutable, then that means that the
+value referred to by its out field may vary over time. In addition to the
+out field universal to all ports, a mutable port has a field named "in"
+which is a function of one argument (also named in), which, when applied,
+causes subsequent references to out to refer to the argument of the
+function.
+
+    Example: If p is a mutable port, and v is a value suitable for storing
+    in that port, then the expression p.in(v) (or, with being explicit
+    about the argument name, p.in(in:v)) will cause subsequent evaluations
+    of p.out to return v.
+
+All primitive value entities--ints, floats, booleans, and strings--are
+immutable ports.
+
+    Example: If v is a primitive value, then v.out is the same as v.
+
+    Example: 5.out is a valid expression and is the same as just saying 5.
+
+Some objects are "tuples". A tuple is an object whose sole purpose is to
+bear an ordered list of references to other objects. Tuples are themselves
+immutable--that is, once instantiated they always necessarily refer to the
+same set of objects, in the same order--but the objects they refer to are
+not necessarily themselves immutable. Tuples may be expressed directly by
+placing the elements of a tuple in square brackets with a comma between
+each element. One refers to an individual element of a tuple by naming the
+tuple and placing the index of the element after it, in square brackets.
+
+    Example: [1, 2, 3] is a three element tuple.
+
+    Example: If t is a tuple, then t[0] refers to the first element of
+    that tuple.
+
+In fact, the array syntax for tuple reference is shorthand for applying
+the "get" field of a tuple.
+
+    Example: If t is a tuple, then t[n] has the same meaning as t.get(n).
+
+Additionally, all tuples have a length field whose value is the number
+one greater than the maximum allowed index.
+
+    Example: The value of the expression [5, 4].length is 2.
+
+The empty tuple is represented as [].
+
+    Example: The value of the expression [].length is 0.
+
+When passing a tuple as an argument to a function, there are two valid ways
+to express it. First, one may express it directly using tuple construction
+syntax. Second, one may name each element individually, using square
+bracket index notation on the argument name. In the latter case, one must
+always end up naming a complete sequence of whole numbers for each tuple
+argument. The elements must be named with compile-time constants.
+
+    Example: If f is a function that takes argument a of a tuple type, then
+    these two expressions are both valid and are equivalent to each other:
+    f(a:[x,y,z]) f(a[0]:x, a[1]:y, a[2]:z)
+
+    In the graphical syntax, a simple lexical transformation will
+    make the second form look like:
+
+        +-----+
+        |  f  |
+      --> a.0 |
+      --> a.1 |
+      --> a.2 |
+        | out >--
+        +v----+
+
+The result of a function call is always an object. Functions which are
+"constructor like" take an arbitrary set of arguments and return objects
+with novel and interesting sets of accessible fields. 
+
+Functions which are "function like" (in the mathematical sense) generally
+take ports (not necessarily just primitive values) and return a port.
+
+In addition to what was previously stated about ports, all ports have a
+field called "tick" which is a function of no arguments and no return
+value, which, when called, causes a port's value to be updated in an
+appropriate way. In the case of primitive values, the tick() operation is
+always a no-op.
+
+In the case of the result of a "function like" function, applying tick()
+has the effect of causing the function to re-evaluate itself in the context
+of possibly-changed inputs, and thereby changing the output value of the
+port.
+
+Actually, any object, whether "function like" or not, may define tick(),
+and the semantics are about the same.
+
+When defining a closure, one generally never defines the tick field
+directly. Instead, tick() is defined automatically as being a sequence of
+calling tick() on all of the objects referred to in the closure that
+themselves define tick(), in an order consistent with the forward flow of
+data through the internal reference graph of the closure.
+
+Possible issue: How to distinguish a function from other objects
+in the model.
+
+    Answer #1: Sorry, you can't do that. Functions, per se, are only
+      compile-time entities.
+
+    Answer #2: If an object is a function, then it has a "func" field. The
+      value of this field is always a "primitive function." Primitive
+      functions have these fields:
+        * inType: a type describing the input arguments
+        * outType: a type describing the output value
+      Function application itself is a primitive operation. Note,
+      particularly, that there is a difference between f() and
+      f.func(). (The latter is not a valid operation.)
+
+    Answer #3: Same as #2, except that "primitive functions" are
+      in fact functions, which may be applied to the object they come
+      from. So, in addition to the fields mentioned above,
+      primitive functions themselves have a "func" field, which in
+      turn has these fields:
+        * inType: <[target: <original object type>, args: <original inType>]>
+        * outType: <original outType>
+        * func: yet another primitive function, with appropriately
+            recursively-defined fields.
+      Function application itself is still a primitive operation, and
+      the recursion bottoms out because primitive functions themselves
+      only "cons up" a func field on-demand. In this case, the following
+      are all equivalent:
+        f(a: x, b: y)
+        f.func(target: f, args: [a:x, b:y])
+        f.func.func(target: f.func, args: {target: f, args: [a:x, b:y]})
+
+    Answer #4: Same as #3, except that we give up on being strongly typed,
+      and so the value of x.func.func is the generic "apply" operation.
+
+Possible issue: Syntax for type descriptions. Straw man:
+
+    <type-spec> ::= '<' <type-expr> '>'
+
+    <type-expr> ::= 
+        <primitive-type>
+      | <const-primitive-type>
+      | <tuple-type>
+      | <object-type>
+      | <function-type>
+      | <value-type>
+
+    <primitive-type> ::= 
+        'int'
+      | 'float'
+      | 'bool'
+      | 'string'
+      | 'any'
+
+    <const-primitive-type> ::= <primitive-type> '!'
+
+    <tuple-type> ::= <type-expr> '[' <whole-number-literal>? ']'
+
+    <object-type> ::= '[' (<type-binding> (',' <type-binding>)*)? ']'
+    // note: [] is the empty-object type
+
+    <type-binding> ::= <identifier> ':' <type-expr>
+
+    <function-type> ::= <object-type> ':=' <object-type>
+
+    <value-type> ::= '`' <expression> '`'
+    // where <expression must be a constant expression; denotes the type
+    // restricted to being of the single value given.
+
+    Examples:
+      <int>      // an integer-valued port
+      <int!>     // an integer constant
+      <any[10]>  // a tuple of length 10 to arbitrary-valued ports
+      <float[]>  // an arbitrary-length tuple to float-valued ports
+      <[a: int]> // an object binding "a" to an integer-valued port
+      <[a: any, b: string![2]]> // an object binding "a" to an arbitrary-valued
+                                // port and "b" to a length 2 tuple of
+                                // string constants
+      <[a: [x: int, y: int], b: bool]> // an object binding "a" to a map
+                                       // (binding "x" and "y" to integer
+                                       // ports) and "b" to a boolean-valued
+                                       // port
+      <int := [in: int[]]> // a function which maps an arbitrary-length
+                           // tuple of int-valued ports, named "in", to
+                           // a single int-valued port output
+      <[] := []> // a function with no arguments and no outputs, obviously
+                 // used only for side-effects
+
+Schema for type correspondences:
+
+    T is a primitive type.
+    N is a whole number.
+    X and Y are arbitrary types.
+
+    <T!>   == <[tick: []:=[], out: T!]>
+    <T>    == <[tick: []:=[], out: T!, in []:=[in: T]]>
+    <T[]>  == <[length: int, get: T:=[in: int]]>
+    <T[N]> == <[length: `N`, get: T:=[in: int]]>
+    <X:=Y> == <[func: [inType: `X`, outType: `Y`, func: ...]]>
+
+

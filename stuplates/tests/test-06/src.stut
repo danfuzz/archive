@@ -1,0 +1,24 @@
+${
+    def a := `hello`;
+    def b := `${a} there`;
+    def c := `${b}, sir.`;
+    def d := `I say: ${c} Really, I do.`;
+
+    `${a}
+    ${b}
+    ${c}
+    ${d}`
+}
+
+${ `${a} and ${b} and ${c}` =~ "foo and bar and baz";
+   a }
+${ b }
+${ c }
+
+${ `${a} and ${b} and ${c}` =~ "zorch and splat foo";
+   a }
+${ b }
+expect nothing: ${ c }
+
+${ `${a}${b}${c}` =~ "blort";
+   `${a}-${b}-${c}`}

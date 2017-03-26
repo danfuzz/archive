@@ -1,0 +1,41 @@
+// Copyright (C) 2000, Dan Bornstein, danfuzz@milk.com. All Rights 
+// Reserved. (Shrill TV degreaser.)
+//
+// This file is part of the MILK Kodebase. The contents of this file are
+// subject to the MILK Kodebase Public License; you may not use this file
+// except in compliance with the License. A copy of the MILK Kodebase Public
+// License has been included with this distribution, and may be found in the
+// file named "LICENSE.html". You may also be able to obtain a copy of the
+// License at <http://www.milk.com/kodebase/legal/LICENSE.html>. Yum!
+//
+// Test file for PlasticSound
+
+main := Main (
+    iters:  20,
+    count:  3,
+    sink_0: pdout1,
+    sink_1: pdin,
+    sink_2: foo);
+
+foo := DebugSink (
+    label: "Hi",
+    count: 3,
+    in_0:  wave.out,
+    in_1:  pdout1.out,
+    in_2:  pdout2.out);
+
+pdin := DoublePDIn (
+    in: wave.out);
+
+wave := FixedSawWave (
+    v0:    0.0,
+    v1:    9.0,
+    phase: 0.0,
+    wlen:  9.0);
+
+pdout1 := DoublePDOut (
+    from: pdin);
+
+pdout2 := DoublePDOut (
+    from: pdin);
+

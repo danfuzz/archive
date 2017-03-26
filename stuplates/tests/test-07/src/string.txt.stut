@@ -1,0 +1,127 @@
+== true
+${ (:string: "" == "") }
+${ (:string: "a" == "a") }
+${ (:string: "1" == 1) }
+${ (:string: 1 == "1") }
+${ (:string: 1 == 1) }
+${ (:string: 01 == 1) }
+${ (:string: 1.0 == 1.00) }
+${ (:string: true == true) }
+${ (:string: false == false) }
+${ (:string: true == "true") }
+${ (:string: "false" == false) }
+${ (:string: null == null) }
+${ (:string: "null" == null) }
+
+== false
+${ (:string: "" == "a") }
+${ (:string: "a" == "b") }
+${ (:string: "01" == 1) }
+${ (:string: 1 == "01") }
+${ (:string: 1 == 1.0) }
+${ (:string: 10 == 1) }
+${ (:string: 1.0 == 1.01) }
+${ (:string: true == false) }
+${ (:string: false == true) }
+${ (:string: null == "NULL") }
+
+!= true
+${ (:string: "" != "a") }
+${ (:string: "a" != "b") }
+${ (:string: "01" != 1) }
+${ (:string: 1 != "01") }
+${ (:string: 1 != 1.0) }
+${ (:string: 10 != 1) }
+${ (:string: 1.0 != 1.01) }
+${ (:string: true != false) }
+${ (:string: false != true) }
+${ (:string: null != "NULL") }
+
+!= false
+${ (:string: "" != "") }
+${ (:string: "a" != "a") }
+${ (:string: "1" != 1) }
+${ (:string: 1 != "1") }
+${ (:string: 1 != 1) }
+${ (:string: 01 != 1) }
+${ (:string: 1.0 != 1.00) }
+${ (:string: true != true) }
+${ (:string: false != false) }
+${ (:string: true != "true") }
+${ (:string: "false" != false) }
+${ (:string: null != null) }
+${ (:string: "null" != null) }
+
+< true
+${ (:string: "" < "a") }
+${ (:string: "A" < "a") }
+${ (:string: "a" < "ab") }
+${ (:string: null < "nullz") }
+${ (:string: false < true) }
+
+< false
+${ (:string: "" < "") }
+${ (:string: "a" < "") }
+${ (:string: "a" < "A") }
+${ (:string: null < "moo") }
+${ (:string: true < false) }
+
+> true
+${ (:string: "a" > "") }
+${ (:string: "a" > "A") }
+${ (:string: "ab" > "a") }
+${ (:string: "nullz" > null) }
+${ (:string: true > false) }
+
+> false
+${ (:string: "" > "") }
+${ (:string: "" > "a") }
+${ (:string: "A" > "a") }
+${ (:string: "moo" > null) }
+${ (:string: false > true) }
+
+<= true
+${ (:string: "" <= "") }
+${ (:string: "" <= "a") }
+${ (:string: "A" <= "a") }
+${ (:string: "a" <= "ab") }
+${ (:string: null <= "nullz") }
+${ (:string: false <= true) }
+${ (:string: null <= null) }
+${ (:string: false <= false) }
+
+<= false
+${ (:string: "a" <= "") }
+${ (:string: "a" <= "A") }
+${ (:string: null <= "moo") }
+${ (:string: true <= false) }
+
+>= true
+${ (:string: "" >= "") }
+${ (:string: "a" >= "") }
+${ (:string: "a" >= "A") }
+${ (:string: "ab" >= "a") }
+${ (:string: "nullz" >= null) }
+${ (:string: true >= false) }
+${ (:string: null >= null) }
+${ (:string: false >= false) }
+
+>= false
+${ (:string: "" >= "a") }
+${ (:string: "A" >= "a") }
+${ (:string: "moo" >= null) }
+${ (:string: false >= true) }
+
++
+expect nothing: ${ (:string: "" + "") }
+${ (:string: "a" + "b") } ab
+${ (:string: null + null) } nullnull
+${ (:string: false + true) } falsetrue
+${ (:string: "not " + false) } not false
+${ (:string: "boo" + "") } boo
+${ (:string: "boo" + null) } boonull
+${ (:string: +null) } null
+${ (:string: +false) } false
+${ (:string: +true) } true
+${ (:string: +10.0) } 10.0
+${ (:string: +"zorch") } zorch

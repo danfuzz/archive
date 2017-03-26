@@ -1,0 +1,97 @@
+== true
+true
+true
+true
+
+== false
+false
+false
+
+!= true
+true
+true
+
+!= false
+false
+false
+
+< true
+true
+true
+
+< false
+false
+false
+
+> true
+true
+true
+
+> false
+false
+false
+
+<= true
+true
+true
+
+<= false
+false
+false
+
+>= true
+true
+true
+
+>= false
+false
+false
+
++
+0.0 0.0
+4.2 4.2
+5.0 5.0
+-20.4 -20.4
+5.0 5.0
+-5.0 -5.0
+1.0 1.0
+0.0 0.0
+NaN NaN
+-Infinity -Infinity
+Infinity Infinity
+
+-
+0.0 0.0
+-3.0 -3.0
+-3.4 -3.4
+-0.0 -0.0
+
+*
+66.2 66.2
+0.0 0.0
+-64.0 -64.0
+
+/
+7.5 7.5
+8.0 8.0
+-1.0 -1.0
+
+%
+1.0 1.0
+0.0 0.0
+-0.0 0.0
+-1.0 -1.0
+-1.0 -1.0
+
+%%
+1.0 1.0
+0.0 0.0
+-0.0 0.0
+1.0 1.0
+
+**
+1.0 1.0
+256.0 256.0
+0.5 0.5
+0.25 0.25
+2.0 2.0

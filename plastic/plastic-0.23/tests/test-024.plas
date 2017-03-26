@@ -1,0 +1,45 @@
+// Copyright (C) 2000, Dan Bornstein, danfuzz@milk.com. All Rights 
+// Reserved. (Shrill TV degreaser.)
+//
+// This file is part of the MILK Kodebase. The contents of this file are
+// subject to the MILK Kodebase Public License; you may not use this file
+// except in compliance with the License. A copy of the MILK Kodebase Public
+// License has been included with this distribution, and may be found in the
+// file named "LICENSE.html". You may also be able to obtain a copy of the
+// License at <http://www.milk.com/kodebase/legal/LICENSE.html>. Yum!
+//
+// Test file for PlasticSound
+
+main := Main (
+    iters:  441000, // samples
+    count:  1,
+    sink_0: foo);
+
+foo := LiveAudio (
+    clock:   44100, // Hz, samples/sec
+    bufSize: 32768,
+    bits:    16,
+    count:   1,
+    in_0:    quant.out);
+
+quant := FixedQuantize (
+    step: 0.7,
+    in:   mul.out);
+
+mul := Mul (
+    count: 2,
+    in_0:  random.out,
+    in_1:  wave.out);
+
+random := FixedRandomWave (
+    seed:  15,
+    v0:    0.0,
+    v1:    1.0,
+    phase: 0.0,
+    wlen:  1.0);
+
+wave := FixedSineWave (
+    v0:    -1.0,
+    v1:    1.0,
+    phase: 0.0,
+    wlen:  220.5); // == 200 Hz @ 44.1KHz

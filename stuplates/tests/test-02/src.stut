@@ -1,0 +1,17 @@
+I am a stupid template.
+${1}
+${2.3}
+${"hello"}
+${'blort'}
+${true}
+${false}
+${null}
+${Infinity}
+${-Infinity}
+${NaN}
+${1 + 1}
+${1.5 + 2.5}
+${~0x1f}
+${"hello".length ()}
+${<file:/home/danfuzz>}
+I am still a stupid template.

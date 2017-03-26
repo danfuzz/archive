@@ -1,0 +1,23 @@
+This is literal text.
+
+A dollar-backslash combination at the end of a line should cause the newline and spaces at the beginning of the next line to be ignored.
+
+A $$$double $$dollar $sign should just turn into a single dollar sign.
+
+Backsspace
+Formfeed
+New
+line
+Carriagereturn
+Horizontal	tabulation
+Unicode! (Unicode)
+Unspecial.
+
+Comments are to be ignored.
+
+Comments may also span multiple lines.
+
+Actual template substitution!
+
+$Other $things $after $a $dollar $sign $should $make $the
+$dollar $sign $be $treated $literally.

@@ -1,0 +1,35 @@
+#!/bin/sh
+#
+# Copyright (C) 2000, Dan Bornstein, danfuzz@milk.com. All Rights 
+# Reserved. (Shrill TV degreaser.)
+#
+# This file is part of the MILK Kodebase. The contents of this file are
+# subject to the MILK Kodebase Public License; you may not use this file
+# except in compliance with the License. A copy of the MILK Kodebase Public
+# License has been included with this distribution, and may be found in the
+# file named "LICENSE.html". You may also be able to obtain a copy of the
+# License at <http://www.milk.com/kodebase/legal/LICENSE.html>. Yum!
+#
+# Script harness to run Plastic.
+#
+# Author: Dan Bornstein, danfuzz@milk.com
+
+# set up prog to be the path of this script, including following symlinks;
+# set up progdir to be the fully-qualified pathname of its directory
+prog=$0
+while [ -h "$prog" ]
+do
+    newprog=`expr "\`/bin/ls -l "$prog"\`" : ".*$prog -> \(.*\)"`
+    expr "$newprog" : / >/dev/null || newprog="`dirname $prog`/$newprog"
+    prog="$newprog"
+done
+oldwd=`pwd`
+cd `dirname $prog`
+progdir=`pwd`
+prog=$progdir/`basename $prog`
+cd $oldwd
+
+libdir=`dirname $progdir`/lib
+
+LD_LIBRARY_PATH=$libdir
+exec java -jar $libdir/gplas.jar "$@"

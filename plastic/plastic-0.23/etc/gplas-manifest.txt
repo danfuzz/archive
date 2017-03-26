@@ -1,0 +1,2 @@
+Main-Class: com.milk.plastic.gnome.Main
+Class-Path: gnome.jar gtk.jar

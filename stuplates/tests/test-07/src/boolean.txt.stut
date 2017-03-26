@@ -1,0 +1,52 @@
+&
+${ (:boolean: false & false ) } false
+${ (:boolean: false & true ) } false
+${ (:boolean: true & false ) } false
+${ (:boolean: true & true ) } true
+
+|
+${ (:boolean: false | false ) } false
+${ (:boolean: false | true ) } true
+${ (:boolean: true | false ) } true
+${ (:boolean: true | true ) } true
+
+^
+${ (:boolean: false ^ false ) } false
+${ (:boolean: false ^ true ) } true
+${ (:boolean: true ^ false ) } true
+${ (:boolean: true ^ true ) } false
+
+==
+${ (:boolean: false == false ) } true
+${ (:boolean: false == true ) } false
+${ (:boolean: true == false ) } false
+${ (:boolean: true == true ) } true
+
+!=
+${ (:boolean: false != false ) } false
+${ (:boolean: false != true ) } true
+${ (:boolean: true != false ) } true
+${ (:boolean: true != true ) } false
+
+~
+${ (:boolean: ~false ) } true
+${ (:boolean: ~true ) } false
+
+!
+${ (:boolean: !false ) } true
+${ (:boolean: !true ) } false
+
+!
+${ (:boolean: -false ) } true
+${ (:boolean: -true ) } false
+
++
+${ (:boolean: +false) } false
+${ (:boolean: +0) } false
+${ (:boolean: +0.0) } false
+${ def x := -0.0; (:boolean: +x ) } false
+${ (:boolean: +"") } false
+${ (:boolean: +true) } true
+${ (:boolean: +1) } true
+${ (:boolean: +0.01) } true
+${ (:boolean: +"x") } true

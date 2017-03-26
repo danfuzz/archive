@@ -1,0 +1,103 @@
+// Copyright (C) 2000, Dan Bornstein, danfuzz@milk.com. All Rights 
+// Reserved. (Shrill TV degreaser.)
+//
+// This file is part of the MILK Kodebase. The contents of this file are
+// subject to the MILK Kodebase Public License; you may not use this file
+// except in compliance with the License. A copy of the MILK Kodebase Public
+// License has been included with this distribution, and may be found in the
+// file named "LICENSE.html". You may also be able to obtain a copy of the
+// License at <http://www.milk.com/kodebase/legal/LICENSE.html>. Yum!
+//
+// Test file for PlasticSound
+
+main := Main (
+    iters:  120000, // samples
+    count:  1,
+    sink_0: foo);
+
+foo := LiveAudio (
+    clock:   12000, // Hz, samples/sec
+    bufSize: 32768,
+    bits:    16,
+    count:   2,
+    in_0:    leftClip.out,
+    in_1:    rightClip.out);
+
+leftClip := SigmoidClip (
+    a:  1.0,
+    in: lMul.out);
+
+rightClip := SigmoidClip (
+    a:  1.0,
+    in: rMul.out);
+
+lMul := Mul (
+    count: 2,
+    in_0:  left.out,
+    in_1:  mulFactor.out);
+
+rMul := Mul (
+    count: 2,
+    in_0:  right.out,
+    in_1:  mulFactor.out);
+
+mulFactor := Const (
+    value: 3.0);
+
+left := Sum (
+    count: 3,
+    in_0:  delay1.out,
+    in_1:  mul2.out,
+    in_2:  delay3.out);
+
+right := Sum (
+    count: 4,
+    in_0:  mul1.out,
+    in_1:  mul2.out,
+    in_2:  delay2.out,
+    in_3:  delay4.out);
+
+delay1 := FixedDelay (
+    period: 1200,
+    in:     mul1.out);
+
+delay2 := FixedDelay (
+    period: 2400,
+    in:     mul2.out);
+
+delay3 := FixedDelay (
+    period: 9600,
+    in:     wave.out_0);
+
+delay4 := FixedDelay (
+    period: 11200,
+    in:     wave.out_0);
+
+mul1 := Mul (
+    count: 2,
+    in_0:  random1.out,
+    in_1:  wave.out_0);
+
+mul2 := Mul (
+    count: 2,
+    in_0:  random2.out,
+    in_1:  wave.out_0);
+
+random1 := FixedRandomWave (
+    seed:  15,
+    v0:    0.0,
+    v1:    1.5,
+    phase: 0.0,
+    wlen:  10.0);
+
+random2 := FixedRandomWave (
+    seed:  22,
+    v0:    0.0,
+    v1:    1.0,
+    phase: 0.0,
+    wlen:  20.0);
+
+wave := AudioFileIn (
+    rate:     1.0,
+    fileName: "etc/plastic.wav",
+    count:    1);

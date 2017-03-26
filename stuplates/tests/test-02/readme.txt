@@ -1,0 +1,1 @@
+This is a minimal test of interpreting scripts.

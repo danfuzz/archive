@@ -1,0 +1,60 @@
+// Copyright (C) 2000, Dan Bornstein, danfuzz@milk.com. All Rights 
+// Reserved. (Shrill TV degreaser.)
+
+// This file is part of the MILK Kodebase. The contents of this file are
+// subject to the MILK Kodebase Public License; you may not use this file
+// except in compliance with the License. A copy of the MILK Kodebase Public
+// License has been included with this distribution, and may be found in the
+// file named "LICENSE.html". You may also be able to obtain a copy of the
+// License at <http://www.milk.com/kodebase/legal/LICENSE.html>. Yum!
+
+fooble := 
+{
+    x := 5;
+    y := 6;
+
+    sum := Sum (in0: x, in1: y);
+
+    out <- sum.out;
+};
+
+is the same as
+
+fooble := Sum (in0: 5, in1: 6);
+
+(type is const integer)
+
+
+
+fooble :=
+{
+    in0 -> x;
+    in1 -> y;
+
+    sum := Sum (in0: x Hz, in1: y Hz);
+
+    out <- sum.out;
+};
+
+is the same as
+
+fooble := Sum (in0: # Hz, in1: # Hz);
+
+(type is functor<T>(T, T) )
+
+
+
+
+
+
+fooble := Sum (
+    in0: bar, 
+    in1: baz, 
+    meta: Meta (
+        description: "This sums the two halves of the fooble.",
+        wireIn0: Wire (x0: 5.5, y0: 4.3, x1: 2, y1: 3),
+        wireIn1: Wire (x0: 8.4, y0: 8.3, x1: 10, y1: 31.4)));
+
+25 Hz == (clock / 25)
+225 KHz  etc.
+1.2 MHz

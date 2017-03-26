@@ -1,0 +1,77 @@
+signal modules:
+  * "harmonizer"
+  * Double sigmoid filter for noise control (adjust both "a" and center).
+  * resonant filter (standard 2-pole low pass)
+  * n-pole filter
+  * non-fixed filters and waveforms
+signal+(boolean/trigger) modules:
+  * if (boolean, vFalse, vTrue)
+  * sample-and-hold
+  * ADSR
+trigger modules:
+  * boolean edge detect (rising, falling, either)
+  * single-fire timed trigger
+  * clock trigger (period and phase)
+boolean modules:
+  * and, or, not, xor
+comparison modules (2 signals in, one boolean out):
+  * <, >, <=, >=, ==, !=
+sample player modules (double as generic numeric sequencers)
+  * sample-as-single-cycle-wave player
+  * variable playback rate
+  * explicit seek (setTime input)
+sample collector (i.e., something which can be the sink for some other
+  network of modules which can in turn be an input to a sample player)
+live audio input module
+generic factory: the thing that lets you just write a bunch of math
+  for the inputs and outputs
+factory factory: the thing that lets you take instantiation parameters on
+  a prototype module network
+real parser
+  * simple tree transforms, e.g. (+ (+ a b) c) => (+ a b c)
+  * coercion of numbers to const-ports if necessary
+  * useful intermediate trees (good to instantiate as runnable or in editor)
+module which runs some other module network at a different rate (captive
+  module)
+standard "hz" and "sec" variables
+something to read midi data in a reasonable way
+something to read keypresses in a reasonable way
+generate bytecode
+investigation of using bean pattern instead of factory pattern
+a gui for controls
+a gui for editing files (see the prototype diagram)
+write doc
+  * tutorial
+  * spec
+other text
+  * copyright
+  * license
+  * readme
+make stuff
+  * jarifier
+  * installer
+
+UI NOTES
+--------
+
+Base thing that's shown is an environment. Different views of an
+environment might only show a subset of the bindings. E.g., "control view"
+only shows the controls. "network view" would show modules and samples but
+not controls. "list view" would show everything in a vaguely hierarchical
+way; "sample view" would list the samples in a more meaningful way. One
+thing that can be bound in an environment is another environment. Useful as
+a grouping: "main" type objects (e.g. module network controllers and
+control masters) are constructed with the environment to preside over as an
+argument.
+
+Have a couple standard templates:
+
+  * control panel -> network containing live output module; control panel
+    has a "clock" control which is input into the network and points
+    through to the live output; control panel also has a start/pause and
+    stop button built-in.
+
+  * blank module network (for defining new factories); include at least
+    input and output definition prototypes
+
+  * base live audio filter; include live in and live out but nothing else.

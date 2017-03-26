@@ -1,0 +1,349 @@
+Copyright (C) 2000, Dan Bornstein, danfuzz@milk.com. All Rights 
+Reserved. (Shrill TV degreaser.)
+
+This file is part of the MILK Kodebase. The contents of this file are
+subject to the MILK Kodebase Public License; you may not use this file
+except in compliance with the License. A copy of the MILK Kodebase Public
+License has been included with this distribution, and may be found in the
+file named "LICENSE.html". You may also be able to obtain a copy of the
+License at <http://www.milk.com/kodebase/legal/LICENSE.html>. Yum!
+
+Grammar for Plastic
+-------------------
+Author: Dan Bornstein, danfuzz@milk.com
+
+Plastic is a dynamic dataflow language, geared towards being visualizable,
+and so some of its forms are perhaps a bit different than what you might be
+used to, in terms of typical programming languages.
+
+
+
+1. Reserved Words
+
+These are the reserved words:
+
+    false:  the obvious boolean constant
+    true:   the obvious boolean constant
+    input:  marker for a closure variable that is an input parameter
+    output: marker for a closure variable that is an output value
+
+
+
+2. Literal Forms and Whitespace
+
+These are the literal forms:
+
+    boolean: 
+      true
+      false
+
+    integer:
+      <digit>*
+      '0x' <digit>* (for a hexadecimal constant)
+
+    float:
+      standard floating point form; exponents look like one of
+      (case insensitive): e5 e+5 e-5
+
+    string:
+      "<characters>", with the typical escape characters, mimic'ed from
+      Java, except that octal form is not supported
+
+Whitespace consists of spaces, tabs, newlines, and carriage returns.
+Additionally, a pair of slashes outside of a string cause the remainder of
+the line to be treated as whitespace. (That is, comments are C++ style.)
+
+
+
+3. Types
+
+Plastic supports four basic types:
+
+    boolean: a true/false boolean value
+    integer: a 32 bit signed integer value
+    float:   a 64 bit double precision floating point value
+    string:  a variable-length sequence of Unicode characters
+
+Additionally, Plastic has the concept of a "port" type. A port is simply a
+wrapper around a single value of some other (typically primitive) type.
+Currently, there is no actual way to express a port type directly in the
+language, but many primitive functions accept ports as inputs and produce
+them as part of their output. It is expected that the syntax will
+eventually be the somewhat typical:
+
+    'port' '<' <typename> '>'
+
+A function that takes a port type may also accept values of the type
+of the port directly; the value is implicitly coerced to be a "const
+port" of the right type. 
+
+The result of functions that take ports as inputs is generally an object
+with one method of note, and accessible fields for each of the outputs. The
+method is called "tick()" and the job of tick() is to take a snapshot of
+the values of all the inputs, and produce new values for each of the output
+ports, based on those inputs (and any salient internal state). In cases
+where it can be determined that one or more outputs could not change, given
+the input arguments, then the outputs may turn out to be "const ports".
+"Const ports" may be implicitly coerced back to the type of the object they
+wrap. 
+
+Functions which take port inputs and produce port outputs are generally
+referred to as "modules."
+
+A function (whether it takes ports or not) whose output will be constant if
+all of its inputs are constant is known as a "const function". If the
+compiler can determine that a function is const and all of its arguments in
+a particular call are const, then it is allowed to evaluate the function at
+compile time, replace references to the function's outputs with the actual
+output values, replace calls to tick() the function with a no-op, replace
+references to the value of the function itself with a simple object that
+contains mappings for the outputs and a no-op tick() method, and can
+complain about any other use of the function (such as calls to other
+methods.)
+
+
+
+4. Top Level (File)
+
+A file consists of a sequence of bindings of the form:
+
+    <identifier> ':=' <expression> ';'
+
+where <identifier> is an identifier that is only ever mentioned once
+on the left hand side of such a statement.
+
+Identifiers must start with a letter or underscore, and consist of
+any number of subsequent letters, digits, or underscores. Case is
+sensitive.
+
+Statements may be in any order. However, a set of statements must be able
+to be sorted into a directed acyclic graph with respect to which
+identifiers refer to which others.
+
+
+
+5. Expressions
+
+5a. Literals
+
+Any literal data is a valid expression. Examples:
+
+    50
+    "hi!"
+    7.2
+    false
+
+5b. Identifiers
+
+An identifier is a valid expression, and denotes a lexically-scoped
+object with the given name. Examples:
+
+    boogers
+    fruitBat27
+
+5c. References
+
+An expression which denotes an object may be followed by a dot and an
+identifier to turn it into a reference to the so-named (by the identifier)
+field of the object. Examples:
+
+    foo.bar
+    milk.is.yummy
+    i.am.a.jelly.donut
+
+5d. Infix Expressions
+
+Plastic has a relatively full set of operators. Expressions may be built up
+with these operators. Here they are, in precedence order, loosest to
+tightest binding:
+
+    Prec   Form    Meaning
+    ----   ----    -------
+       1   x & y   logical/boolean AND (int or boolean)
+       1   x | y   logical/boolean OR (int or boolean)
+       1   x ^ y   logical/boolean XOR (int or boolean)
+       2   x == y  equality comparison (any)
+       2   x != y  inequality comparison (any)
+       3   x < y   ordering relationship (int or float)
+       3   x > y   ordering relationship (int or float)
+       3   x <= y  ordering relationship (int or float)
+       3   x >= y  ordering relationship (int or float)
+       4   x + y   addition (int or float)
+       4   x - y   subtraction (int or float)
+       5   x * y   multiplication (int or float)
+       5   x / y   division (int or float)
+       5   x % y   remainder (int or float)
+       6   x ** y  exponentiation (int or float)
+       7   -x      negation (int or float)
+       7   +x      numeric identity (int or float)
+       7   !x      logical/boolean NOT (int or boolean)
+
+In terms of precedence, the reference operator (see above) binds tighter
+than any of these, as does application (see below). You may use parenthesis
+in the expected manner to group expressions in a way other than what
+the default precedence causes.
+
+Examples:
+
+       -5
+       a * 3
+       (0xffff & 27) / 16
+       slavery == freedom
+
+5e. Application
+
+An object may have a list of arguments applied to it. This is a valid
+expression. In Plastic, all arguments are keyed, but there is a shorthand
+notation for passing arguments positionally. The general form is this:
+
+    <apply> ::= <expression> '(' <argspec> [ ',' <argspec> ]* ')'
+
+    <argspec> ::= <identifier> ':' <expression>
+                | '#' ':' <expression>
+                | <expression>
+
+The second and third forms of <argspec> are equivalent (more about the iota
+particle below), and indicate that the next numbered argument be used,
+where numbered arguments have the form "in<n>" where <n> is a whole number,
+starting at 0, or, if the function only takes one argument, it denotes that
+argument name.
+
+If an application is used as part of an enclosing expression, then the
+result of that application must have a single output, and that output is
+fed to the enclosing expression.
+
+Examples:
+
+    foo ()
+    foo (a: 10)
+    foo (a: 10, b: 20)
+    frob (10, 20)
+    frob (#: 10, #: 20)
+    frob (in0: 10, in1: 20)
+
+(The last three are all equivalent.)
+
+
+
+5f. Closures
+
+One can create use the closure syntax to construct functions or merely
+to hide local variables. A closure consists of a series of statements,
+each terminated with a semicolon, all enclosed in curly braces:
+
+    <closure> ::= '{' <closure-statement>* '}'
+
+The statements may be any of these forms:
+
+    <closure-statement> ::=
+        <identifier> ':=' <expression> ';'
+        | 'input' <identifier> [':=' <expression>] ';'
+        | 'output' <identifier> ':=' <expression> ';'
+        | '::' <expression> ';'
+
+The first form simply binds a new variable inside the closure to the given
+expression. Use of the input and output forms indicate that the closure is
+in fact to be a function, and these define the inputs and outputs of the
+function. If an expression is provided with an input, then that expression
+should be the processing to do on the way in, specified as a function of
+one argument (see "Iota" below for the convenient way to provide these).
+For outputs, the expression is the value seen by the outside. The final
+form is a "yield" statement, and indicates that the value of the closure
+should be considered the value of the yield expression. One may not use
+both a yield and either inputs or outputs in the same closure.
+
+As with a set of top-level statements, a given identifier may only be bound
+once. And, also like the top-level, statements may be in any order;
+however, a set of statements must be able to be sorted into a directed
+acyclic graph with respect to which expressions refer to which others.
+
+
+
+Example:
+
+    // function of "x" and "y" which outputs "z" as the double of the
+    // sum of x and y
+    {
+        input x;
+        input y;
+        output z := (x + y) * 2;
+    }
+
+    // ditto, using a superfluous yield statement
+    { 
+        foo := 
+        {
+            input x;
+            input y;
+            output z := (x + y) * 2;
+        };
+
+        :: foo;
+    }
+
+    // ditto, only slightly less contrived
+    { 
+        mulFactor := 2;
+
+        foo := 
+        {
+            input x;
+            input y;
+            output z := (x + y) * mulFactor;
+        };
+
+        :: foo;
+    }
+
+
+
+5g. Iota
+
+The iota particle, "#", is used for a number of purposes, but, briefly
+speaking, it means "the relevant thing I'm obviously referring to." 
+
+In the case of the application form (above), an iota in the key position
+means to use the next numbered argument.
+
+In other contexts, it basically refers to a variable that is common to the
+expression it is in, causing the expression to turn into a function of one
+argument. Anywhere where an identifier is valid in an expression, an iota
+is also valid. Multiple mentions of iota in an expression are all bound
+to the same implicit variable. 
+
+For example, the following are all functions which take a single
+argument and double the value:
+
+    # + #
+    # * 2
+    # + # + # - #
+
+In contexts where input and output names matter, the input argument
+to an iota function is always "in" and its output value is always "out".
+
+Iotas always maximally "infect" the lexically-closest expression they are
+in, but do not "escape" across statement boundaries (such in the top-level
+or within a closure). So, for example, the following is *not* a call to the
+function foo, but is rather a function, which, when called calls foo with
+foo's argument bar passed as 10 more than the argument to the function:
+
+    foo (bar: # + 10)
+
+That is, more verbosely, it is equivalent to this:
+
+    {
+        input in;
+        output out := foo (bar: in + 10).out;
+    }
+
+The fact that iota never escapes statements interacts with the "yield"
+syntax for closures, leading to a particularly easy and succinct form for
+combining simple functions within an expression
+
+    '{' '::' <function-body-using-iota> ';' '}'
+
+For example, the following is a function application of "foo" with an iota
+function as its argument (contrast to the example above):
+
+    foo (bar: { :: # + 10; })
+

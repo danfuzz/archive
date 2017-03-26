@@ -1,0 +1,66 @@
+// Copyright (C) 2000, Dan Bornstein, danfuzz@milk.com. All Rights 
+// Reserved. (Shrill TV degreaser.)
+//
+// This file is part of the MILK Kodebase. The contents of this file are
+// subject to the MILK Kodebase Public License; you may not use this file
+// except in compliance with the License. A copy of the MILK Kodebase Public
+// License has been included with this distribution, and may be found in the
+// file named "LICENSE.html". You may also be able to obtain a copy of the
+// License at <http://www.milk.com/kodebase/legal/LICENSE.html>. Yum!
+//
+// Test file for PlasticSound
+
+main := Main (
+    iters:  10000000, // samples
+    count:  1,
+    sink_0: foo);
+
+foo := LiveAudio (
+    clock:   44100, // Hz, samples/sec
+    bufSize: 4096,
+    bits:    16,
+    count:   2,
+    in_0:    atan0.out,
+    in_1:    atan1.out);
+
+atan0 := AtanClip (
+    in: sum0.out);
+
+atan1 := AtanClip (
+    in: sum1.out);
+
+sum0 := Sum (
+    count: 2,
+    in_0:  file.out_0,
+    in_1:  feed1.out);
+
+sum1 := Sum (
+    count: 2,
+    in_0:  file.out_1,
+    in_1:  feed0.out);
+
+feed0 := Feedback (
+    maxDelay: 10000,
+    in_feed:  constFeed.out,
+    in_delay: delay.out,
+    in_wave:  file.out_0);
+
+feed1 := Feedback (
+    maxDelay: 10000,
+    in_feed:  constFeed.out,
+    in_delay: delay.out,
+    in_wave:  file.out_1);
+
+constFeed := Const (
+    value: -0.8);
+
+delay := FixedSineWave (
+    v0:    5000.0,
+    v1:    10000.0,
+    phase: 0.0,
+    wlen:  44100.0); // = 10 Hz @ 44.1KHz
+
+file := AudioFileIn (
+    rate:     1.0,
+    fileName: "/home/danfuzz/media/audio/sacrificial_lamb.wav",
+    count:    2);

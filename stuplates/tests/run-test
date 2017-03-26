@@ -1,0 +1,92 @@
+#!/bin/sh
+
+# Copyright (c) 2002 Dan Bornstein, danfuzz@milk.com. All rights 
+# reserved, except as follows:
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the condition that the above
+# copyright notice and this permission notice shall be included in all copies
+# or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+#
+# Script harness to run a test.
+#
+# Author: Dan Bornstein, danfuzz@milk.com
+
+if [ "x$1" = "x" ]; then
+    echo "usage: $0 <test-source>" 1>&2
+    exit 1
+fi
+testSrc=$1
+
+# set up prog to be the path of this script, including following symlinks;
+# set up progdir to be the fully-qualified pathname of its directory
+prog=$0
+while [ -h "$prog" ]
+do
+    newprog=`expr "\`/bin/ls -l "$prog"\`" : ".*$prog -> \(.*\)"`
+    expr "$newprog" : / >/dev/null || newprog="`dirname $prog`/$newprog"
+    prog="$newprog"
+done
+oldwd=`pwd`
+cd `dirname $prog`
+progdir=`pwd`
+prog=$progdir/`basename $prog`
+
+# build is where the build lives
+cd ../build
+build=`pwd`
+
+cd $oldwd
+
+if [ -d "$testSrc/src" ]; then
+
+    # run the processor on the test source directory
+    rm -rf $build/test-output
+    $build/bin/stu --source=$testSrc/src --output-dir=$build/test-output
+
+    # it should succeed
+    if [ "$?" != "0" ]; then
+        echo "Stu failed to process the source." 1>&2
+        exit 1
+    fi
+
+    # compare the test output directory with the expected output
+    diff --exclude CVS -ur $build/test-output $testSrc/expected
+
+    if [ "$?" != "0" ]; then
+        echo "Actual output is different than expected." 1>&2
+        echo "Output left in build directory for comparison." 1>&2
+        exit 1
+    fi
+
+else
+
+    # run the processor on the test file
+    srcFile=`ls $testSrc/src* | head -1`
+    rm -rf $build/test-output.log
+    $build/bin/stu --source=$srcFile --output-file=$build/test-output.log
+
+    # compare the test output with the expected output
+    diff -u $build/test-output.log $testSrc/expected
+
+    if [ "$?" != "0" ]; then
+        echo "Actual output is different than expected." 1>&2
+        echo "Output left in build directory for comparison." 1>&2
+        exit 1
+    fi
+
+fi
+   
+echo "$testSrc: Test succeeded"

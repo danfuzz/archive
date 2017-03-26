@@ -1,0 +1,29 @@
+Copyright (C) 2000, Dan Bornstein, danfuzz@milk.com. All Rights 
+Reserved. (Shrill TV degreaser.)
+
+This file is part of the MILK Kodebase. The contents of this file are
+subject to the MILK Kodebase Public License; you may not use this file
+except in compliance with the License. A copy of the MILK Kodebase Public
+License has been included with this distribution, and may be found in the
+file named "LICENSE.html". You may also be able to obtain a copy of the
+License at <http://www.milk.com/kodebase/legal/LICENSE.html>. Yum!
+
+Running Plastic Sound
+---------------------
+
+If you've successfully built, then there will be two scripts in build/bin.
+gplas runs the Gnome front end, which doesn't do much yet. plastic is the
+interesting one. Call it with a single argument naming a file to load and
+run. There are a bunch of working examples in the tests directory. As of
+this writing, the most interesting ones (not that they're actually that
+interesting, and in approximate order from most to least interesting) are:
+
+    test-029.plas (run it when cd'ed to the main plastic directory)
+    test-025.plas
+    test-021.plas
+    test-018.plas
+    test-026.plas
+    test-017.plas
+    test-020.plas
+
+

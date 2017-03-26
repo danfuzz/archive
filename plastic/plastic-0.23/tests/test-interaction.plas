@@ -1,0 +1,41 @@
+// Copyright (C) 2000, Dan Bornstein, danfuzz@milk.com. All Rights 
+// Reserved. (Shrill TV degreaser.)
+//
+// This file is part of the MILK Kodebase. The contents of this file are
+// subject to the MILK Kodebase Public License; you may not use this file
+// except in compliance with the License. A copy of the MILK Kodebase Public
+// License has been included with this distribution, and may be found in the
+// file named "LICENSE.html". You may also be able to obtain a copy of the
+// License at <http://www.milk.com/kodebase/legal/LICENSE.html>. Yum!
+
+// Test file for PlasticSound
+
+CONTROL.dur:      100000000 # samples
+CONTROL.sink.1:   foo
+
+foo.type:         live-audio
+foo.inputs:       1
+foo.clock:        44100 # Hz, samples/sec
+foo.bits:         16
+foo.in-0:         gated-wave
+
+gated-wave.type:  mul
+gated-wave.count: 2
+gated-wave.in.0:  gate-ctl
+gated-wave.in.1:  wave
+
+wave.type:        square-wave
+wave.in.val-0:    -1
+wave.in.val-1:    1
+wave.in.freq:     freq-ctl
+
+gate-ctl.type:     external-toggle
+gate-ctl.name:     Gate
+gate-ctl.in.val-0: 0
+gate-ctl.in.val-1: 1
+
+freq-ctl.type:     external-continuous
+freq-ctl.name:     Frequency
+freq-ctl.limit-0:  0
+freq-ctl.limit-1:  22050
+

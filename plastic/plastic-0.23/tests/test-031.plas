@@ -1,0 +1,100 @@
+// Copyright (C) 2000, Dan Bornstein, danfuzz@milk.com. All Rights 
+// Reserved. (Shrill TV degreaser.)
+//
+// This file is part of the MILK Kodebase. The contents of this file are
+// subject to the MILK Kodebase Public License; you may not use this file
+// except in compliance with the License. A copy of the MILK Kodebase Public
+// License has been included with this distribution, and may be found in the
+// file named "LICENSE.html". You may also be able to obtain a copy of the
+// License at <http://www.milk.com/kodebase/legal/LICENSE.html>. Yum!
+//
+// Test file for PlasticSound
+
+main := Main (
+    iters:  441000, // samples
+    count:  4,
+    sink_0: file0,
+    sink_1: file1,
+    sink_2: file2,
+    sink_3: file3);
+
+file0 := AudioFileOut (
+    fileName: "test-031a.wav",
+    clock:    44100.0, // Hz, samples/sec
+    bits:     16,
+    count:    2,
+    in_0:     limit.out,
+    in_1:     delay.out);
+
+file1 := AudioFileOut (
+    fileName: "test-031b.wav",
+    clock:    44100.0, // Hz, samples/sec
+    bits:     16,
+    count:    1,
+    in_0:     limit.out);
+
+file2 := AudioFileOut (
+    fileName: "test-031c.wav",
+    clock:    44100.0, // Hz, samples/sec
+    bits:     8,
+    count:    2,
+    in_0:     limit.out,
+    in_1:     delay.out);
+
+file3 := AudioFileOut (
+    fileName: "test-031d.wav",
+    clock:    44100.0, // Hz, samples/sec
+    bits:     8,
+    count:    1,
+    in_0:     limit.out);
+
+delay := FixedDelay (
+    period: 11025,
+    in:     quant.out);
+
+quant := FixedQuantize (
+    step: 0.3,
+    in:   limit.out);
+
+limit := SigmoidClip (
+    a:     1.0,
+    in:    feedb.out);
+
+feedb := Feedback (
+    maxDelay: 10000,
+    in_feed:  constFeed.out,
+    in_delay: delay1.out,
+    in_wave:  mulB.out);
+
+constFeed := Const (
+    value: 0.7);
+
+delay1 := FixedSineWave (
+    v0:    5000.0,
+    v1:    10000.0,
+    phase: 0.0,
+    wlen:  4410.0); // = 10 Hz @ 44.1KHz
+
+mulB := Mul (
+    count: 3,
+    in_0:  waveB.out,
+    in_1:  lfo3.out,
+    in_2:  lfo4.out);
+
+waveB := FixedSquareWave (
+    v0:    -1.0,
+    v1:    1.0,
+    phase: 0.0,
+    wlen:  220.5); // == 200 Hz @ 44.1KHz
+
+lfo3 := FixedSquareWave (
+    v0:    0.0,
+    v1:    1.0,
+    phase: 0.0,
+    wlen:  4410.0); // = 10 Hz @ 44.1KHz
+
+lfo4 := FixedSquareWave (
+    v0:    0.0,
+    v1:    1.0,
+    phase: 0.0,
+    wlen:  44100.0); // = 1 Hz @ 44.1KHz

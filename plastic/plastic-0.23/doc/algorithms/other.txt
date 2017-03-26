@@ -1,0 +1,430 @@
+
+http://www.google.com/search?q=cache:www.smartelectronix.com/musicdsp/other.htm
+
+
+  main
+  archive
+           synthesis
+            analysis
+             filters
+             effects
+             other
+  links
+  submit
+
+
+
+
+                   Double to Int
+
+                     Name: pointer cast, double to int (round to zero, or 'trunctate')
+                     Type:
+                     References: posted by Andy Mucho (and David Waugh and Oskari Tammelin (?)), original inventor (?) 'Sree Kotay'
+                     Notes:
+                     -Platform independant, literally. You have IEEE FP numbers, this will work, as long as your not expecting a signed integer back larger than 16bits :)
+                     -Will only work correctly for FP numbers within the range of [-32768.0,32767.0]
+                     -The FPU must be in Double-Precision mode
+
+                  typedef double lreal;
+                  typedef float  real;
+                  typedef unsigned long uint32;
+                  typedef long int32;
+
+                     //2^36 * 1.5, (52-_shiftamt=36) uses limited precision to floor
+                     //16.16 fixed point representation
+
+                  const lreal _double2fixmagic = 68719476736.0*1.5;
+                  const int32 _shiftamt        = 16;
+
+                  #if BigEndian_
+                          #define iexp_                           0
+                          #define iman_                           1
+                  #else
+                          #define iexp_                           1
+                          #define iman_                           0
+                  #endif //BigEndian_
+
+                  // Real2Int
+                  inline int32 Real2Int(lreal val)
+                  {
+                     val= val + _double2fixmagic;
+                     return ((int32*)&val)[iman_] >> _shiftamt;
+                  }
+
+                  // Real2Int
+                  inline int32 Real2Int(real val)
+                  {
+                     return Real2Int ((lreal)val);
+                  }
+
+                  For the x86 assembler freaks here's the assembler equivalent:
+
+                  __double2fixmagic    dd 000000000h,042380000h
+
+                  fld    AFloatingPoint Number
+                  fadd   QWORD PTR __double2fixmagic
+                  fstp   TEMP
+                  movsx  eax,TEMP+2
+
+                   Cubic interpollation
+
+                     Name: Cubic interpollation
+                     Type: Cubic Hermite interpolation
+                     References: posted by Olli Niemitalo
+                     Notes: 
+                     finpos is the fractional, inpos the integer part.
+                     Allso see other001.gif 
+
+                  xm1 = x [inpos - 1];
+                  x0  = x [inpos + 0];
+                  x1  = x [inpos + 1];
+                  x2  = x [inpos + 2];
+                  a = (3 * (x0-x1) - xm1 + x2) / 2;
+                  b = 2*x1 + xm1 - (5*x0 + x2) / 2;
+                  c = (x1 - xm1) / 2;
+                  y [outpos] = (((a * finpos) + b) * finpos + c) * finpos + x0;
+
+                   Base-2 exp
+
+                     Name: Base-2 exp
+                     Type:
+                     References: who wrote this routine???
+                     Notes:
+                     Linear approx. between 2 integer values of val. Uses 32-bit integers. Not very efficient but fastest than exp()
+
+                  inline double fast_exp2 (const double val)
+                  {
+                     int    e;
+                     double ret;
+
+                     if (val >= 0)
+                     {
+                        e = int (val);
+                        ret = val - (e - 1);
+                        ((*(1 + (int *) &ret)) &= ~(2047 << 20)) += (e + 1023) << 20;
+                     }
+                     else
+                     {
+                        e = int (val + 1023);
+                        ret = val - (e - 1024);
+                        ((*(1 + (int *) &ret)) &= ~(2047 << 20)) += e << 20;
+                     }
+                     return (ret);
+                  }
+
+                   Denormal numbers
+
+                     Name: how to avoid denormalisation
+                     Type:
+                     References: who wrote this text!!!???
+                     Notes: this text describes some ways to avoid denormalisation. Denormalisation happens when FPU's go mad processing very small numbers
+
+                     Download : other001.txt
+
+                   Conversions on a PowerPC
+
+                     Name: Conversions on a PowerPC
+                     Type: motorola ASM conversions
+                     References: James McCartney (duh, who else?)
+                     Notes:
+
+                  double ftod(float x) { return (double)x;
+                  00000000: 4E800020  blr
+                      // blr == return from subroutine, i.e. this function is a noop
+
+                  float dtof(double x) { return (float)x;
+                  00000000: FC200818  frsp       fp1,fp1
+                  00000004: 4E800020  blr
+
+                  int ftoi(float x) { return (int)x;
+                  00000000: FC00081E  fctiwz     fp0,fp1
+                  00000004: D801FFF0  stfd       fp0,-16(SP)
+                  00000008: 8061FFF4  lwz        r3,-12(SP)
+                  0000000C: 4E800020  blr
+
+                  int dtoi(double x) { return (int)x;
+                  00000000: FC00081E  fctiwz     fp0,fp1
+                  00000004: D801FFF0  stfd       fp0,-16(SP)
+                  00000008: 8061FFF4  lwz        r3,-12(SP)
+                  0000000C: 4E800020  blr
+
+                  double itod(int x) { return (double)x;
+                  00000000: C8220000  lfd        fp1,@1558(RTOC)
+                  00000004: 6C608000  xoris      r0,r3,$8000
+                  00000008: 9001FFF4  stw        r0,-12(SP)
+                  0000000C: 3C004330  lis        r0,17200
+                  00000010: 9001FFF0  stw        r0,-16(SP)
+                  00000014: C801FFF0  lfd        fp0,-16(SP)
+                  00000018: FC200828  fsub       fp1,fp0,fp1
+                  0000001C: 4E800020  blr
+
+                  float itof(int x) { return (float)x;
+                  00000000: C8220000  lfd        fp1,@1558(RTOC)
+                  00000004: 6C608000  xoris      r0,r3,$8000
+                  00000008: 9001FFF4  stw        r0,-12(SP)
+                  0000000C: 3C004330  lis        r0,17200
+                  00000010: 9001FFF0  stw        r0,-16(SP)
+                  00000014: C801FFF0  lfd        fp0,-16(SP)
+                  00000018: EC200828  fsubs      fp1,fp0,fp1
+                  0000001C: 4E800020  blr
+
+                   Look ahead limiting
+
+                     Name: Look ahead limiting
+                     Type: 
+                     References: Wilfried Welti
+                     Notes:
+                     use add_value with all values which enter the look-ahead area,
+                     and remove_value with all value which leave this area. to get
+                     the maximum value in the look-ahead area, use get_max_value.
+                     in the very beginning initialize the table with zeroes.
+
+                  Code:
+
+                  If you always want to know the maximum amplitude in
+                  your look-ahead area, the thing becomes a sorting
+                  problem. very primitive approach using a look-up table:
+
+                  void lookup_add(unsigned section, unsigned size, unsigned value)
+                  {
+                    if (section==value)
+                      lookup[section]++;
+                    else
+                    {
+                      size >>= 1;
+                      if (value>section)
+                      {
+                        lookup[section]++;
+                        lookup_add(section+size,size,value);
+                      }
+                      else
+                        lookup_add(section-size,size,value);
+                    }
+                  }
+
+                  void lookup_remove(unsigned section, unsigned size, unsigned value)
+                  {
+                    if (section==value)
+                      lookup[section]--;
+                    else
+                    {
+                      size >>= 1;
+                      if (value>section)
+                      {
+                        lookup[section]--;
+                        lookup_remove(section+size,size,value);
+                      }
+                      else
+                        lookup_remove(section-size,size,value);
+                    }
+                  }
+
+                  unsigned lookup_getmax(unsigned section, unsigned size)
+                  {
+                    unsigned max = lookup[section] ? section : 0;
+                    size >>= 1;
+                    if (size)
+                      if (max)
+                      {
+                        max = lookup_getmax((section+size),size);
+                        if (!max) max=section;
+                      }
+                      else
+                        max = lookup_getmax((section-size),size);
+                    return max;
+                  }
+
+                  void add_value(unsigned value)
+                  {
+                    lookup_add(LOOKUP_VALUES>>1, LOOKUP_VALUES>>1, value);
+                  }
+
+                  void remove_value(unsigned value)
+                  {
+                    lookup_remove(LOOKUP_VALUES>>1, LOOKUP_VALUES>>1, value);
+                  }
+
+                  unsigned get_max_value()
+                  {
+                    return lookup_getmax(LOOKUP_VALUES>>1, LOOKUP_VALUES>>1);
+                  }
+
+                   Allocating aligned memory
+
+                     Name: Allocating aligned memory
+                     Type: 
+                     References: Benno Senoner
+                     Notes:
+                     we waste up to align_size + sizeof(int) bytes when we alloc a memory area.
+                     We store the aligned_ptr - unaligned_ptr delta in an int located before the aligned area.
+                     This is needed for the free() routine since we need to free all the memory not only the aligned area.
+                     You have to use aligned_free() to free the memory allocated with aligned_malloc() !
+
+                  /* align_size has to be a power of two !! */
+                  void *aligned_malloc(size_t size, size_t align_size) {
+
+                    char *ptr,*ptr2,*aligned_ptr;
+                    int align_mask = align_size - 1;
+
+                    ptr=(char *)malloc(size + align_size + sizeof(int));
+                    if(ptr==NULL) return(NULL);
+
+                    ptr2 = ptr + sizeof(int);
+                    aligned_ptr = ptr2 + (align_size - ((size_t)ptr2 & align_mask));
+
+
+                    ptr2 = aligned_ptr - sizeof(int);
+                    *((int *)ptr2)=(int)(aligned_ptr - ptr);
+
+                    return(aligned_ptr);
+                  }
+
+                  void aligned_free(void *ptr) {
+
+                    int *ptr2=(int *)ptr - 1;
+                    ptr -= *ptr2;
+                    free(ptr);
+                  }
+
+                   pow(x,4) approximation
+
+                     Name: pow(x,4) approximation
+                     Type: 
+                     References: Stefan Stenzel
+                     Notes:
+                     Very hacked, but it gives a rough estimate of x**4 by modifying exponent and mantissa. 
+
+                  float p4fast(float in)
+                  {
+                    long *lp,l;
+
+                    lp=(long *)(&in);
+                    l=*lp;
+
+                    l-=0x3F800000l; /* un-bias */
+                    l<<=2;          /* **4 */
+                    l+=0x3F800000l; /* bias */
+                    *lp=l;
+
+                    /* compiler will read this from memory since & operator had been used */
+                    return in;
+                  }
+
+                   another float-to-int
+
+                     Name: another float-to-int
+                     Type: 
+                     References: Posted by Ross Bencina
+                     Notes: Intel only
+
+                  int truncate(float flt)
+                  {
+                    int i;
+                    static float half = 0.5f;
+                    _asm
+                    {
+                       fld flt
+                       fsub half
+                       fistp i
+                    }
+                    return i
+                  }
+
+                   another float-to-int, coverting an array of floats
+
+                     Name: another float-to-int, coverting an array of floats
+                     Type: 
+                     References: Stefan Stenzel
+                     Notes: Intel only
+
+                  void f2short(float *fptr,short *iptr,int n)
+                  {
+                  _asm {
+                      mov     ebx,n
+                      mov     esi,fptr
+                      mov     edi,iptr
+                      lea     ebx,[esi+ebx*4]   ; ptr after last
+                      mov     edx,0x80008000    ; damn endianess confuses...
+                      mov     ecx,0x4b004b00    ; damn endianess confuses...
+                      mov     eax,[ebx]         ; get last value
+                      push    eax
+                      mov     eax,0x4b014B01
+                      mov     [ebx],eax         ; mark end
+                      mov     ax,[esi+2]
+                      jmp     startf2slp
+
+                  ;   Pad with nops to make loop start at address divisible
+                  ;   by 16 + 2, e.g. 0x01408062, don't ask why, but this
+                  ;   gives best performance. Unfortumately "align 16" does
+                  ;   not seem to work with my VC.
+                  ;   below I noted the measured execution times for different
+                  ;   nop-paddings on my Pentium Pro, 100 conversions.
+                  ;   saturation:  off pos neg
+
+
+                     nop         ;355 546 563 <- seems to be best
+                  ;   nop         ;951 547 544
+                  ;   nop         ;444 646 643
+                  ;   nop         ;444 646 643
+                  ;   nop         ;944 951 950
+                  ;   nop         ;358 447 644
+                  ;   nop         ;358 447 643
+                  ;   nop         ;358 544 643
+                  ;   nop         ;543 447 643
+                  ;   nop         ;643 447 643
+                  ;   nop         ;1047 546 746
+                  ;   nop         ;545 954 1253
+                  ;   nop         ;545 547 661
+                  ;   nop         ;544 547 746
+                  ;   nop         ;444 947 1147
+                  ;   nop         ;444 548 545
+                  in_range:
+                      mov     eax,[esi]
+                      xor     eax,edx
+                  saturate:
+                      lea     esi,[esi+4]
+                      mov     [edi],ax
+                      mov     ax,[esi+2]
+                      add     edi,2
+                  startf2slp:
+                      cmp     ax,cx
+                      je      in_range
+                      mov     eax,edx
+                      js      saturate     ; saturate neg -> 0x8000
+                      dec     eax          ; saturate pos -> 0x7FFF
+                      cmp     esi,ebx      ; end reached ?
+                      jb      saturate
+                      pop     eax
+                      mov     [ebx],eax    ; restore end flag
+                      }
+                  }
+
+                   MATLAB-Tools for SNDAN
+
+                     Name: MATLAB-Tools for SNDAN
+                     Type: 
+                     References: Markus Sapp
+                     Notes: downloadable zip
+
+                     Download: other001.zip 
+
+                   Pseudo-Random generator
+
+                     Name: Pseudo-Random generator
+                     Type: Linear Congruential, 32bit
+                     References: Hal Chamberlain, "Musical Applications of Microprocessors" (Posted by Phil Burk)
+                     Notes: 
+                     This can be used to generate random numeric sequences or to synthesise a white noise audio signal.
+                     If you only use some of the bits, use the most significant bits by shifting right.
+                     Do not just mask off the low bits.
+
+                  /* Calculate pseudo-random 32 bit number based on linear congruential method. */
+                  unsigned long GenerateRandomNumber( void )
+                  {
+                     /* Change this for different random sequences. */
+                     static unsigned long randSeed = 22222;
+                     randSeed = (randSeed * 196314165) + 907633515;
+                     return randSeed;
+                  }
+
+

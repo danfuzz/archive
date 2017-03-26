@@ -1,0 +1,1 @@
+java -Xrunhprof:cpu=samples,depth=1 -jar build/lib/stu.jar --profile-eval=10 --source=tests/test-07/src/precedence.txt.stut --output-file=blort.txt

@@ -1,0 +1,26 @@
+Building Stuplates requires a Java compiler and Ant. The program uses library
+features only available in JDK1.4 or later.
+
+Ant is available here:
+
+    <http://jakarta.apache.org/ant/>
+
+As of this writing, the build works with Ant 1.4.1. 
+
+If you want to be able to recompile the grammar files, you also need to
+have ANTLR and the optional ant tasks. ANTLR is available here:
+
+    <http://www.antlr.org/>
+
+As of this writing, the grammars compile with ANTLR 2.7.2a2, but at least
+one of them triggers a bug in ANTLR 2.7.1.
+
+Once you have Ant installed, cd to the main source directory and type
+"ant." The system should compile. You will be left with a bin and a lib
+directory in the build directory. You can run the script to invoke the
+jar file, or run the jar file directly.
+
+Once you have built the main program, you can run ant in the "tests"
+directory to run the (potentially illustrative) regression tests. If you
+run a test and it gives you an error, then please report that fact as a bug.
+

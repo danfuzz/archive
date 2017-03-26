@@ -1,0 +1,29 @@
+== true
+${ (:id: null == null) }
+${ (:id: true == true) }
+${ (:id: false == false) }
+${ (:id: "x" == "x") }
+${ def a := 1; (:id: a == a) }
+
+== false
+${ (:id: null == true) }
+${ (:id: true == false) }
+${ (:id: "x" == (:default: "x" + "")) }
+
+!= true
+${ (:id: null != true) }
+${ (:id: true != false) }
+${ (:id: "x" != (:default: "x" + "")) }
+
+!= false
+${ (:id: null != null) }
+${ (:id: true != true) }
+${ (:id: false != false) }
+${ (:id: "x" != "x") }
+${ (:id: a != a) }
+
++
+expect nothing: ${ +null }
+${ +"blort" } blort
+${ +10 } 10
+${ +10.5 } 10.5

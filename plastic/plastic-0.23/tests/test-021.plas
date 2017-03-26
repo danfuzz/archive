@@ -1,0 +1,85 @@
+// Copyright (C) 2000, Dan Bornstein, danfuzz@milk.com. All Rights 
+// Reserved. (Shrill TV degreaser.)
+//
+// This file is part of the MILK Kodebase. The contents of this file are
+// subject to the MILK Kodebase Public License; you may not use this file
+// except in compliance with the License. A copy of the MILK Kodebase Public
+// License has been included with this distribution, and may be found in the
+// file named "LICENSE.html". You may also be able to obtain a copy of the
+// License at <http://www.milk.com/kodebase/legal/LICENSE.html>. Yum!
+//
+// Test file for PlasticSound
+
+main := Main (
+    iters:  882000, // 20 secs @ 44.1KHz
+    count:  1,
+    sink_0: foo);
+
+foo := LiveAudio (
+    clock:   44100, // Hz, samples/sec
+    bufSize: 32768,
+    bits:    16,
+    count:   2,
+    in_0:    lAtan.out,
+    in_1:    rAtan.out);
+
+lAtan := AtanClip (
+    in: lSum.out);
+
+rAtan := AtanClip (
+    in: rSum.out);
+
+lSum := Sum (
+    count: 2,
+    in_0:  wave1.out,
+    in_1:  wave2.out);
+
+rSum := Sum (
+    count: 2,
+    in_0:  delay1.out,
+    in_1:  wave3.out);
+
+delay1 := FixedDelay (
+    period: 4410, // samples
+    in:     wave1.out);
+
+wave1 := Mul (
+    count: 2,
+    in_0:  raw1.out,
+    in_1:  lfo1.out);
+
+raw1 := FixedSineWave (
+    v0:    -1.0,
+    v1:    1.0,
+    phase: 0.0,
+    wlen:  110.25); // 400 Hz @ 44.1KHz
+
+lfo1 := FixedSquareWave (
+    v0:    0.0,
+    v1:    1.0,
+    phase: 0.0,
+    wlen:  44100.0); // 1 Hz @ 44.1KHz
+
+wave2 := SawWave (
+    v0:      -1.0,
+    v1:      1.0,
+    in_wlen: wlen2.out);
+
+wave3 := SawWave (
+    v0:      -1.0,
+    v1:      1.0,
+    in_wlen: wlen3.out);
+
+wlen2 := Mul (
+    count: 2,
+    in_0:  constHalf.out,
+    in_1:  wlen3.out);
+
+constHalf := Const (
+    value: 0.5);
+
+wlen3 := FixedSineWave (
+    v0:    441.0, // 100 Hz @ 44.1KHz
+    v1:    147.0, // 300 Hz @ 44.1KHz
+    phase: 0.0,
+    wlen:  176400.0); // 0.25 Hz @ 44.1KHz

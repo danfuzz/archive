@@ -1,0 +1,28 @@
+This is literal text.
+
+A dollar-backslash combination $\
+ at the end of a line $\
+  should cause the newline $\
+   and spaces at the beginning $\
+    of the next line to be ignored.
+
+A $$$$$$double $$$$dollar $$sign should just turn into a single dollar sign.
+
+Backs$\bspace
+Form$\ffeed
+New$\nline
+Carriage$\rreturn
+Horizontal$\ttabulation
+$\u0055$\u006e$\u0069$\u0063$\u006f$\u0064$\u0065$\u0021 (Unicode)
+Un$\s$\p$\e$\c$\i$\a$\l.
+
+Comments ${--such as this--}are to be ignored.
+
+Comments ${--such
+             as
+             this--}may also span multiple lines.
+
+${ "Actual" }${ " template "}${ "substitution!" }
+
+$Other $things $after $a $dollar $sign $should $make $the
+$dollar $sign $be $treated $literally.

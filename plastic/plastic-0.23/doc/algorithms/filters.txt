@@ -1,0 +1,521 @@
+http://www.google.com/search?q=cache:www.smartelectronix.com/musicdsp/filters.htm
+
+
+
+  main
+  archive
+           synthesis
+            analysis
+             filters
+             effects
+             other
+  links
+  submit
+
+
+
+
+                   State variable
+
+                     Name: State variable
+                     Type: 12db resonant low, high or bandpass
+                     References: Effect Deisgn Part 1, Jon Dattorro, J. Audio Eng. Soc., Vol 45, No. 9, 1997 September
+                     Notes:
+                     Digital approximation of Chamberlin two-pole low pass. Easy to calculate coefficients, easy to process algorithm.
+
+                  cutoff = cutoff freq in Hz
+                  fs = sampling frequency //(e.g. 44100Hz)
+                  f = 2 sin (pi * cutoff / fs) //[approximately]
+                  q = resonance/bandwidth [0 < q <= 1]  most res: q=1, less: q=0
+                  low = lowpass output
+                  high = highpass output
+                  band = bandpass output
+                  notch = notch output
+
+                  scale = q
+
+                  low=high=band=0;
+
+                  //--beginloop
+                  low = low + f * band;
+                  high = scale * input - low - q*band;
+                  band = f * high + band;
+                  notch = high + low;
+                  //--endloop
+
+                   Moog VCF
+
+                     Name: Moog VCF
+                     Type: 24db resonant lowpass
+                     References: CSound source code, Stilson/Smith CCRMA paper.
+                     Notes:
+                     Digital approximation of Moog VCF. Fairly easy to calculate coefficients, fairly easy to process algorithm, good sound.
+
+                  //Init
+                  cutoff = cutoff freq in Hz
+                  fs = sampling frequency //(e.g. 44100Hz)
+                  res = resonance [0 - 1] //(minimum - maximum)
+
+                  f = 2 * cutoff / fs; //[0 - 1]
+                  k = 3.6*f - 1.6*f*f -1; //(Empirical tunning)
+                  p = (k+1)*0.5;
+                  scale = e^((1-p)*1.386249;
+                  r = res*scale;
+                  y4 = output;
+
+                  y1=y2=y3=y4=oldx=oldy1=oldy2=oldy3=0;
+
+                  //Loop
+                  //--Inverted feed back for corner peaking
+                  x = input - r*y4;
+
+                  //Four cascaded onepole filters (bilinear transform)
+                  y1=x*p + oldx*p - k*y1;
+                  y2=y1*p+oldy1*p - k*y2;
+                  y3=y2*p+oldy2*p - k*y3;
+                  y4=y3*p+oldy3*p - k*y4;
+
+                  //Clipper band limited sigmoid
+                  y4 = y4 - (y4^3)/6;
+
+                  oldx = x;
+                  oldy1 = y1;
+                  oldy2 = y2;
+                  oldy3 = y3;
+
+                   Moog VCF, variation
+
+                     Name: Moog VCF
+                     Type: 24db resonant lowpass
+                     References: CSound source code, Stilson/Smith CCRMA paper., Paul Kellett version
+                     Notes:
+                     The second "q =" line previously used exp() - I'm not sure if
+                     what I've done is any faster, but this line needs playing with
+                     anyway as it controls which frequencies will self-oscillate. I
+                     think it could be tweaked to sound better than it currently does.
+
+                     Highpass / Bandpass :
+
+                     They are only 6dB/oct, but still seem musically useful - the 'fruity' sound
+                     of the 24dB/oct lowpass is retained.
+
+                  // Moog 24 dB/oct resonant lowpass VCF
+                  // References: CSound source code, Stilson/Smith CCRMA paper.
+                  // Modified by paul.kellett@maxim.abel.co.uk July 2000
+
+                    float f, p, q;             //filter coefficients
+                    float b0, b1, b2, b3, b4;  //filter buffers (beware denormals!)
+                    float t1, t2;              //temporary buffers
+
+                  // Set coefficients given frequency & resonance [0.0...1.0]
+
+                    q = 1.0f - frequency;
+                    p = frequency + 0.8f * frequency * q;
+                    f = p + p - 1.0f;
+                    q = resonance * (1.0f + 0.5f * q * (1.0f - q + 5.6f * q * q));
+
+                  // Filter (in [-1.0...+1.0])
+
+                    in -= q * b4;                          //feedback
+                    t1 = b1;  b1 = (in + b0) * p - b1 * f;
+                    t2 = b2;  b2 = (b1 + t1) * p - b2 * f;
+                    t1 = b3;  b3 = (b2 + t2) * p - b3 * f;
+                              b4 = (b3 + t1) * p - b4 * f;
+                    b4 = b4 - b4 * b4 * b4 * 0.166667f;    //clipping
+                    b0 = in;
+
+                  // Lowpass  output:  b4
+                  // Highpass output:  in - b4;
+                  // Bandpass output:  3.0f * (b3 - b4);
+
+                   Moog VCF, yet another variation
+
+                     Name: Moog VCF
+                     Type: 24db resonant lowpass
+                     References: CSound source code, Stilson/Smith CCRMA paper., Timo Tossavainen (?) version
+                     Notes:
+                     in[x] and out[x] are member variables, init to 0.0
+                     the controls:
+
+                     fc = cutoff, nearly linear [0,1] -> [0, fs/2]
+                     res = resonance [0, 4] -> [no resonance, self-oscillation]
+
+                  Tdouble MoogVCF::run(double input, double fc, double res)
+                  {
+                    double f = fc * 1.16;
+                    double fb = res * (1.0 - 0.15 * f * f);
+                    input -= out4 * fb;
+                    input *= 0.35013 * (f*f)*(f*f);
+                    out1 = input + 0.3 * in1 + (1 - f) * out1; // Pole 1
+                    in1  = input;
+                    out2 = out1 + 0.3 * in2 + (1 - f) * out2;  // Pole 2
+                    in2  = out1;
+                    out3 = out2 + 0.3 * in3 + (1 - f) * out3;  // Pole 3
+                    in3  = out2;
+                    out4 = out3 + 0.3 * in4 + (1 - f) * out4;  // Pole 4
+                    in4  = out3;
+                    return out4;
+                  }
+
+                   Resonant IIR lowpass (12dB/oct)
+
+                     Name: Resonant IIR lowpass filter
+                     Type: 12dB/oct, maximally steep if amp = 1
+                     References: Olli Niemitalo
+                     Notes:
+                     Hard to calculate coefficients, easy to process algorithm
+
+                  resofreq = pole frequency
+                  amp = magnitude at pole frequency (approx)
+
+                  double pi = 3.141592654;
+
+                  /* Parameters. Change these! */
+                  double resofreq = 5000;
+                  double amp = 1.0;
+
+                  DOUBLEWORD streamofs;
+                  double w = 2.0*pi*resofreq/samplerate; // Pole angle
+                  double q = 1.0-w/(2.0*(amp+0.5/(1.0+w))+w-2.0); // Pole magnitude
+                  double r = q*q;
+                  double c = r+1.0-2.0*cos(w)*q;
+                  double vibrapos = 0;
+                  double vibraspeed = 0;
+
+                  /* Main loop */
+                  for (streamofs = 0; streamofs < streamsize; streamofs++) {
+
+                    /* Accelerate vibra by signal-vibra, multiplied by lowpasscutoff */
+                    vibraspeed += (fromstream[streamofs] - vibrapos) * c;
+
+                    /* Add velocity to vibra's position */
+                    vibrapos += vibraspeed;
+
+                    /* Attenuate/amplify vibra's velocity by resonance */
+                    vibraspeed *= r;
+
+                    /* Check clipping */
+                    temp = vibrapos;
+                    if (temp > 32767) {
+                      temp = 32767;
+                    } else if (temp < -32768) temp = -32768;
+
+                    /* Store new value */
+                    tostream[streamofs] = temp;
+                  }
+
+                   Lowpass filter for parameter edge filtering
+
+                     Name: Lowpass filter for parameter edge filtering
+                     Type: special :)
+                     References: Olli Niemitalo (the math), Bram de Jong (the question)
+                     Notes:
+                     use this filter to smooth sudden parameter changes
+                     Allso see filter001.gif 
+
+
+                  /* - Three one-poles combined in parallel
+                   * - Output stays within input limits
+                   * - 18 dB/oct (approx) frequency response rolloff
+                   * - Quite fast, 2x3 parallel multiplications/sample, no internal buffers
+                   * - Time-scalable, allowing use with different samplerates
+                   * - Impulse and edge responses have continuous differential
+                   * - Requires high internal numerical precision
+                   */
+                  {
+                          /* Parameters */
+                          // Number of samples from start of edge to halfway to new value
+                          const double    scale = 100;
+                          // 0 < Smoothness < 1. High is better, but may cause precision problems
+                          const double    smoothness = 0.999;
+
+                          /* Precalc variables */
+                          double          a = 1.0-(2.4/scale); // Could also be set directly
+                          double          b = smoothness;      //         -"-
+                          double          acoef = a;
+                          double          bcoef = a*b;
+                          double          ccoef = a*b*b;
+                          double          mastergain = 1.0 / (-1.0/(log(a)+2.0*log(b))+2.0/
+                                          (log(a)+log(b))-1.0/log(a));
+                          double          again = mastergain;
+                          double          bgain = mastergain * (log(a*b*b)*(log(a)-log(a*b)) /
+                                              ((log(a*b*b)-log(a*b))*log(a*b))
+                                              - log(a)/log(a*b));
+                          double          cgain = mastergain * (-(log(a)-log(a*b)) /
+                                          (log(a*b*b)-log(a*b)));
+
+                          /* Runtime variables */
+                          long            streamofs;
+                          double          areg = 0;
+                          double          breg = 0;
+                          double          creg = 0;
+
+                          /* Main loop */
+                          for (streamofs = 0; streamofs < streamsize; streamofs++)
+                          {
+                                  /* Update filters */
+                                  areg = acoef * areg + fromstream [streamofs];
+                                  breg = bcoef * breg + fromstream [streamofs];
+                                  creg = ccoef * creg + fromstream [streamofs];
+
+                                  /* Combine filters in parallel */
+                                  long            temp =   again * areg
+                                                         + bgain * breg
+                                                         + cgain * creg;
+
+                                  /* Check clipping */
+                                  if (temp > 32767)
+                                  {
+                                          temp = 32767;
+                                  }
+                                  else if (temp < -32768)
+                                  {
+                                          temp = -32768;
+                                  }
+
+                                  /* Store new value */
+                                  tostream [streamofs] = temp;
+                          }
+                  }
+
+                   Resonant filter
+
+                     Name: Resonant filter
+                     Type: LP
+                     References: Paul Kellett
+                     Notes:
+                     This filter consists of two first order low-pass filters in
+                     series, with some of the difference between the two filter
+                     outputs fed back to give a resonant peak.
+
+                     You can use more filter stages for a steeper cutoff but the
+                     stability criteria get more complicated if the extra stages
+                     are within the feedback loop.
+
+                  //set feedback amount given f and q between 0 and 1
+                  fb = q + q/(1.0 - f);
+
+                  //for each sample...
+                  buf0 = buf0 + f * (in - buf0 + fb * (buf0 - buf1));
+                  buf1 = buf1 + f * (buf0 - buf1);
+                  out = buf1;
+
+                   303 type filter with saturation
+
+                     Name: 303 type filter with saturation
+                     Type: Runge-Kutta Filters
+                     References: Hans Mikelson
+                     Notes:
+                     I posted a filter to the Csound mailing list a couple of weeks ago that has a 303 flavor to it. It basically does wacky distortions to the sound. I used Runge-Kutta for
+                     the diff eq. simulation though which makes it somewhat sluggish.
+
+                     This is a CSound score!!
+
+                     Download: filters001.txt 
+
+                   All-Pass Filters, a good explanation
+
+                     Name: All-Pass Filters, a good explanation
+                     Type: 
+                     References: Olli Niemitalo
+                     Notes:
+
+                     Download: filters002.txt 
+
+                   Various Biquad filters
+
+                     Name: Various Biquad filters
+                     Type: 
+                     References: JAES, Vol. 31, No. 11, 1983 November
+                     Notes:
+                     See text...
+                     Filters included are:
+                     presence
+                     shelvelowpass
+                     2polebp
+                     peaknotch
+                     peaknotch2
+
+                     Download: filters003.txt 
+
+                   Resonant low pass filter
+
+                     Name: Resonant low pass filter
+                     Type: LP, 24dB (?)
+                     References: Zxform
+                     Notes:
+                     See text...
+
+                     Download: filters004.txt 
+
+                   Prewarping
+
+                     Name: Prewarping
+                     Type: explains what pre-warping is!
+                     References: Posted by robert bristow-johnson (better known as "rbj" ;) )
+                     Notes:
+                     prewarping is simply recognizing the warping that the BLT introduces.
+                     to determine frequency response, we evaluate the digital H(z) at
+                     z=exp(j*w*T) and we evaluate the analog Ha(s) at s=j*W . the following
+                     will confirm the jw to unit circle mapping and will show exactly what the
+                     mapping is (this is the same stuff in the textbooks):
+
+                     the BLT says: s = (2/T) * (z-1)/(z+1)
+
+                     substituting: s = j*W = (2/T) * (exp(j*w*T) - 1) / (exp(j*w*T) + 1)
+
+                     j*W = (2/T) * (exp(j*w*T/2) - exp(-j*w*T/2)) / (exp(j*w*T/2) + exp(-j*w*T/2))
+
+                     = (2/T) * (j*2*sin(w*T/2)) / (2*cos(w*T/2))
+
+                     = j * (2/T) * tan(w*T/2)
+
+                     or
+
+                     analog W = (2/T) * tan(w*T/2)
+
+                     so when the real input frequency is w, the digital filter will behave with
+                     the same amplitude gain and phase shift as the analog filter will have at a
+                     hypothetical frequency of W. as w*T approaches pi (Nyquist) the digital
+                     filter behaves as the analog filter does as W -> inf. for each degree of
+                     freedom that you have in your design equations, you can adjust the analog
+                     design frequency to be just right so that when the deterministic BLT
+                     warping does its thing, the resultant warped frequency comes out just
+                     right. for a simple LPF, you have only one degree of freedom, the cutoff
+                     frequency. you can precompensate it so that the true cutoff comes out
+                     right but that is it, above the cutoff, you will see that the LPF dives
+                     down to -inf dB faster than an equivalent analog at the same frequencies.
+
+                   Notch filter
+
+                     Name: Notch filter
+                     Type: 2 poles 2 zeros IIR
+                     References: Olli Niemitalo
+                     Notes:
+                     Creates a muted spot in the spectrum with adjustable steepness. A complex conjugate pair of zeros on the z-plane unit circle and neutralizing poles approaching at
+                     the same angles from inside the unit circle.
+
+                  Parameters:
+                  0 =< freq =< samplerate/2
+                  0 =< q < 1 (The higher, the narrower)
+
+                  AlgoAlgo=double pi = 3.141592654;
+                  double sqrt2 = sqrt(2.0);
+
+                  double freq = 2050; // Change! (zero & pole angle)
+                  double q = 0.4;     // Change! (pole magnitude)
+
+                  double z1x = cos(2*pi*freq/samplerate);
+                  double a0a2 = (1-q)*(1-q)/(2*(fabs(z1x)+1)) + q;
+                  double a1 = -2*z1x*a0a2;
+                  double b1 = -2*z1x*q;
+                  double b2 = q*q;
+                  double reg0, reg1, reg2;
+
+                  unsigned int streamofs;
+                  reg1 = 0;
+                  reg2 = 0;
+
+                  /* Main loop */
+                  for (streamofs = 0; streamofs < streamsize; streamofs++)
+                  {
+                    reg0 = a0a2 * ((double)fromstream[streamofs]
+                                   + fromstream[streamofs+2])
+                         + a1 * fromstream[streamofs+1]
+                         - b1 * reg1
+                         - b2 * reg2;
+
+                    reg2 = reg1;
+                    reg1 = reg0;
+
+                    int temp = reg0;
+
+                    /* Check clipping */
+                    if (temp > 32767) {
+                      temp = 32767;
+                    } else if (temp < -32768) temp = -32768;
+
+                    /* Store new value */
+                    tostream[streamofs] = temp;
+                  }
+
+                   RBJ-Audio-EQ-Cookbook
+
+                     Name: RBJ-Audio-EQ-Cookbook
+                     Type: Biquads for all puposes!
+                     References: Robert Bristow-Johnson (a.k.a. RBJ)
+                     Notes:
+                     A superb collection of filters used in a lot of (commercial) plugins and effects
+
+                     LPF
+                     HPF
+                     BPF
+                     notch
+                     peakingEQ
+                     lowShelf
+                     highShelf
+
+                     Download : filters005.txt 
+
+                   Zoelzer biquad filters
+
+                     Name: Zoelzer biquad filters
+                     Type: IIR
+                     References: Udo Zoelzer: Digital Audio Signal Processing (John Wiley & Sons, ISBN 0 471 97226 6), Chris Townsend, Posted by Olli Niemitalo
+                     Notes:
+                     Here's the formulas for the Low Pass, Peaking, and Low Shelf, which should
+                     cover the basics. I tried to convert the formulas so they are little more consistent.
+                     Also, the Zolzer low pass/shelf formulas didn't have adjustable Q, so I added that for
+                     consistency with Roberts formulas as well. I think someone may want to check that I did
+                     it right.
+                     ------------ Chris Townsend
+                     I mistranscribed the low shelf cut formulas.
+                     Hopefully this is correct. Thanks to James McCartney for noticing.
+                     ------------ Chris Townsend
+
+                  omega = 2*PI*frequency/sample_rate
+
+                  K=tan(omega/2)
+                  Q=Quality Factor
+                  V=gain
+
+                  LPF:   b0 =  K^2
+                         b1 =  2*K^2
+                         b2 =  K^2
+                         a0 =  1 + K/Q + K^2
+                         a1 =  2*(K^2 - 1)
+                         a2 =  1 - K/Q + K^2
+
+                  peakingEQ:
+                        boost:
+                        b0 =  1 + V*K/Q + K^2
+                        b1 =  2*(K^2 - 1)
+                        b2 =  1 - V*K/Q + K^2
+                        a0 =  1 + K/Q + K^2
+                        a1 =  2*(K^2 - 1)
+                        a2 =  1 - K/Q + K^2
+
+                        cut:
+                        b0 =  1 + K/Q + K^2
+                        b1 =  2*(K^2 - 1)
+                        b2 =  1 - K/Q + K^2
+                        a0 =  1 + V*K/Q + K^2
+                        a1 =  2*(K^2 - 1)
+                        a2 =  1 - V*K/Q + K^2
+
+                  lowShelf:
+                       boost:
+                         b0 =  1 + sqrt(2*V)*K + V*K^2
+                         b1 =  2*(V*K^2 - 1)
+                         b2 =  1 - sqrt(2*V)*K + V*K^2
+                         a0 =  1 + K/Q + K^2
+                         a1 =  2*(K^2 - 1)
+                         a2 =  1 - K/Q + K^2
+
+                       cut:
+                         b0 =  1 + K/Q + K^2
+                         b1 =  2*(K^2 - 1)
+                         b2 =  1 - K/Q + K^2
+                         a0 =  1 + sqrt(2*V)*K + V*K^2
+                         a1 =  2*(v*K^2 - 1)
+                         a2 =  1 - sqrt(2*V)*K + V*K^2

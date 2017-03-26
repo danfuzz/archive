@@ -1,0 +1,39 @@
+// Copyright (C) 2000, Dan Bornstein, danfuzz@milk.com. All Rights 
+// Reserved. (Shrill TV degreaser.)
+//
+// This file is part of the MILK Kodebase. The contents of this file are
+// subject to the MILK Kodebase Public License; you may not use this file
+// except in compliance with the License. A copy of the MILK Kodebase Public
+// License has been included with this distribution, and may be found in the
+// file named "LICENSE.html". You may also be able to obtain a copy of the
+// License at <http://www.milk.com/kodebase/legal/LICENSE.html>. Yum!
+//
+// Test file for PlasticSound
+
+main := Main (
+    iters:  10000000, // samples
+    count:  1,
+    sink_0: foo);
+
+foo := LiveAudio (
+    clock:   44100, // Hz, samples/sec
+    bufSize: 4096,
+    bits:    16,
+    count:   2,
+    in_0:    sigL.out,
+    in_1:    sigR.out);
+
+sigL := SigmoidClip (
+    a:  1.0,
+    in: wave.out_0);
+
+sigR := SigmoidClip (
+    a:  1.0,
+    in: wave.out_1);
+
+wave := AudioFileIn (
+    rate:     1.0,
+    fileName: "/home/danfuzz/media/audio/ejectum.wav",
+    //fileName: "/home/danfuzz/media/audio/narrow-band.wav",
+    //fileName: "/home/danfuzz/media/audio/narrow-band-extended.wav",
+    count:    2);

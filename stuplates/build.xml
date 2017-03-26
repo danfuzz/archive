@@ -1,0 +1,124 @@
+<!--
+
+  Copyright (c) 2002 Dan Bornstein. All rights reserved, except as follows:
+
+  Permission is hereby granted, free of charge, to any person obtaining a
+  copy of this software and associated documentation files (the "Software"),
+  to deal in the Software without restriction, including without limitation
+  the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  and/or sell copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the condition that the above
+  copyright notice and this permission notice shall be included in all copies
+  or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+  DEALINGS IN THE SOFTWARE.
+
+  ##########
+
+  Author: Dan Bornstein, danfuzz@milk.com
+
+-->
+
+<project default="all">
+  <property name="product-name" value="stu"/>
+  <property name="major-version" value="0"/>
+  <property name="minor-version" value="18"/>
+  <property name="version" value="${major-version}.${minor-version}"/>
+  <property name="tag" 
+            value="${product-name}-${major-version}-${minor-version}"/>
+
+  <property name="build" value="${basedir}/build"/>
+  <property name="classes" value="${build}/classes"/>
+  <property name="lib" value="${build}/lib"/>
+  <property name="bin" value="${build}/bin"/>
+  <property name="jarfile" value="${lib}/${product-name}.jar"/>
+  <property name="distname" value="${product-name}-${version}"/>
+  <property name="srcdistname" value="${product-name}-src-${version}"/>
+  <property name="distdir" value="${build}/${distname}"/>
+  <property name="srcdistdir" value="${build}/${srcdistname}"/>
+
+  <target name="all">
+    <mkdir dir="${classes}"/>
+    <mkdir dir="${lib}"/>
+    <copy todir="${bin}">
+       <fileset dir="${basedir}/bin"/>
+    </copy>
+    <exec executable="sh">
+      <arg value="-c"/>
+      <arg value="chmod 755 ${bin}/*"/>
+    </exec>
+    <antlr target="src/com/milk/stu/parser/stut.g" dir="${basedir}"/>
+    <antlr target="src/com/milk/stu/parser/stu.g" dir="${basedir}"/>
+    <unjar src="${basedir}/lib/antlr.jar"
+	   dest="${classes}"
+	   overwrite="false"/>
+    <javac srcdir="${basedir}/src" 
+	   destdir="${classes}" 
+	   optimize="off" 
+	   debug="on"/>
+    <jar jarfile="${jarfile}"
+	 basedir="${classes}"
+	 manifest="${basedir}/manifest.txt">
+      <exclude name="**/META-INF/"/>
+    </jar>
+  </target>
+
+  <target name="clean">
+    <delete dir="${build}"/>
+  </target>
+
+  <target name="dist"
+          depends="all">
+    <mkdir dir="${distdir}"/>
+    <mkdir dir="${distdir}/bin"/>
+    <mkdir dir="${distdir}/lib"/>
+    <copy todir="${distdir}/bin">
+      <fileset dir="${bin}"/>
+    </copy>
+    <exec executable="sh">
+      <arg value="-c"/>
+      <arg value="chmod 755 ${distdir}/bin/*"/>
+    </exec>
+    <copy todir="${distdir}/lib">
+      <fileset dir="${lib}"/>
+    </copy>
+    <copy todir="${distdir}">
+      <fileset dir="${basedir}">
+        <include name="COPYRIGHT.txt"/>
+        <include name="README.txt"/>
+        <include name="docs/"/>
+        <include name="tests/"/>
+      </fileset>
+    </copy>
+    <zip zipfile="${distdir}.zip"
+         basedir="${distdir}"/>
+    <mkdir dir="${srcdistdir}"/>
+    <copy todir="${srcdistdir}">
+      <fileset dir="${basedir}">
+        <exclude name="build/"/>
+      </fileset>
+    </copy>
+    <zip zipfile="${srcdistdir}.zip"
+         basedir="${srcdistdir}"/>
+    <cvs command="tag -c -F ${tag}"/>
+  </target>
+
+  <target name="upload"
+          depends="dist">
+    <exec executable="scp">
+      <arg value="-r"/>
+      <arg value="${distdir}.zip"/>
+      <arg value="${srcdistdir}.zip"/>
+      <arg value="README.html"/>
+      <arg value="docs"/>
+      <arg value="tests"/>
+      <arg value="milk.com:www/htdocs/kodebase/stuplates"/>
+    </exec>
+  </target>
+</project>

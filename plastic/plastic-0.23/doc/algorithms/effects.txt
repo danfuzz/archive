@@ -1,0 +1,170 @@
+http://www.google.com/search?q=cache:www.smartelectronix.com/musicdsp/effects.htm
+
+
+
+  main
+  archive
+           synthesis
+            analysis
+             filters
+             effects
+             other
+  links
+  submit
+
+
+
+
+                   WaveShaper
+
+                     Name: 
+                     Type: waveshaper
+                     References: Bram de Jong
+                     Notes:
+                     where x (in [-1..1] will be distorted and a is a distortion parameter that goes from 1 to infinity
+                     The equation is valid for positive and negativ values.
+                     If a is 1, it results in a slight distortion and with bigger a's the signal get's more funky.
+
+                     A good thing about the shaper is that feeding it with bigger-than-one
+                     values, doesn't create strange fx. The maximum this function will reach is
+                     1.2 for a=1.
+
+                  f(x,a) = x*(abs(x) + a)/(x^2 + (a-1)*abs(x) + 1)
+
+                   Soft saturation waveshaper
+
+                     Name: Soft saturation waveshaper
+                     Type: waveshaper
+                     References: Bram de Jong
+                     Notes:
+                     This only works for positive values of x. a should be in the range 0..1
+
+                  x < a:
+                    f(x) = x
+                  x > a:
+                    f(x) = a + (x-a)/(1+((x-a)/(1-a))^2)
+                  x > 1:
+                    f(x) = (a+1)/2
+
+                   waveshaper
+
+                     Name: waveshaper
+                     Type: waveshaper
+                     References: Jon Watte
+                     Notes:
+                     A favourite of mine is using a sin() function instead.
+                     This will have the "unfortunate" side effect of removing 
+                     odd harmonics if you take it to the extreme: a triangle 
+                     wave gets mapped to a pure sine wave.
+                     This will work with a going from .1 or so to a= 5 and bigger! 
+                     The mathematical limits for a = 0 actually turns it into a linear 
+                     function at that point, but unfortunately FPUs aren't that good 
+                     with calculus :-) Once a goes above 1, you start getting clipping 
+                     in addition to the "soft" wave shaping. It starts getting into 
+                     more of an effect and less of a mastering tool, though :-)
+
+                     Seeing as this is just various forms of wave shaping, you 
+                     could do it all with a look-up table, too. In my version, that would 
+                     get rid of the somewhat-expensive sin() function.
+
+                  (input: a == "overdrive amount")
+
+                  z = M_PI * a;
+                  s = 1/sin(z)
+                  b = 1/a
+
+                  if (x > b)
+                    f(x) = 1
+                  else
+                    f(x) = sin(z*x)*s
+
+                   Delay time calculation for reverberation
+
+                     Name: Delay time calculation for reverberation
+                     Type: 
+                     References: Andy Mucho
+                     Notes:
+                     This is from some notes I had scribbled down from a while back on
+                     automatically calculating diffuse delays. Given an intial delay line gain
+                     and time, calculate the times and feedback gain for numlines delay lines..
+
+                  int   numlines = 8;
+                  float t1 = 50.0;        // d0 time
+                  float g1 = 0.75;        // d0 gain
+                  float rev = -3*t1 / log10 (g1);
+
+                  for (int n = 0; n < numlines; ++n)
+                  {
+                    float dt = t1 / pow (2, (float (n) / numlines));
+                    float g = pow (10, -((3*dt) / rev));
+                    printf ("d%d t=%.3f g=%.3f\n", n, dt, g);
+                  }
+
+                  The above with t1=50.0 and g1=0.75 yields:
+
+                   d0 t=50.000 g=0.750
+                   d1 t=45.850 g=0.768
+                   d2 t=42.045 g=0.785
+                   d3 t=38.555 g=0.801
+                   d4 t=35.355 g=0.816
+                   d5 t=32.421 g=0.830
+                   d6 t=29.730 g=0.843
+                   d7 t=27.263 g=0.855
+
+                  To go more diffuse, chuck in dual feedback paths with a one cycle delay
+                  effectively creating a phase-shifter in the feedback path, then things get
+                  more exciting.. Though what the optimum phase shifts would be I couldn't
+                  tell you right now..
+
+                   reverberation techniques
+
+                     Name: reverberation techniques
+                     Type: 
+                     References: Sean Costello
+                     Notes:
+
+                       Parallel comb filters, followed by series allpass filters. This was the original design by Schroeder, and was extended by Moorer. Has a VERY metallic sound for
+                       sharp transients. 
+                       Several allpass filters in series (also proposed by Schroeder). Also suffers from metallic sound. 
+                       2nd-order comb and allpass filters (described by Moorer). Not supposed to give much of an advantage over first order sections. 
+                       Nested allpass filters, where an allpass filter will replace the delay line in another allpass filter. Pioneered by Gardner. Haven't heard the results. 
+                       Strange allpass & delay line based structure in Jon Dattorro article (JAES). Four allpass filters are used as an input to a cool "figure-8" feedback loop, where
+                       four allpass reverberators are used in series with a few delay lines. Outputs derived from various taps in structure. Supposedly based on a Lexicon reverb
+                       design. Modulating delay lines are used in some of the allpass structures to "spread out" the eigentones.
+                       - Feedback Delay Networks. Pioneered by Puckette/Stautner, with Jot conducting extensive recent research. Sound VERY good, based on initial experiments.
+                       Modulating delay lines and feedback matrixes used to spread out eigentones. 
+                       Waveguide-based reverbs, where the reverb structure is based upon the junction of many waveguides. Julius Smith developed these. Recently, these have been
+                       shown to be essentially equivalent to the feedback delay network reverbs. Also sound very nice. Modulating delay lines and scattering values used to spread
+                       out eigentones. 
+                       Convolution-based reverbs, where the sound to be reverbed is convolved with the impulse response of a room, or with exponentially-decaying white noise.
+                       Supposedly the best sound, but very computationally expensive, and not very flexible. 
+                       FIR-based reverbs. Essentially the same as convolution. Probably not used, but shorter FIR filters are probably used in combination with many of the above
+                       techniques, to provide early reflections. 
+
+                   Yet another waveshaper
+
+                     Name: Yet another waveshaper
+                     Type: euh. waveshaper!
+                     References: BigTick (Partice Tarrabia (sp?) ) and Bram de Jong
+                     Notes: amount should be in [-1..1[ Plot it and stand back in astonishment!
+
+                  x = input in [-1..1]
+                  y = output
+                  k = 2*amount/(1-amount);
+
+                  f(x) = (1+k)*x/(1+k*abs(x))
+
+
+                   guitar feedback
+
+                     Name: guitar feedback
+                     Type: feedback + distortion emulation
+                     References: Sean Costello
+                     Notes: 
+                     It is fairly simple to simulate guitar feedback with a simple Karplus-Strong algorithm (this was described in a CMJ article in the early 90's): 
+
+                       Run the output of the Karplus-Strong delay lines into a nonlinear shaping function for distortion (i.e. 6 parallel delay lines for 6 strings, going into 1 nonlinear
+                       shaping function that simulates an overdriven amplifier, fuzzbox, etc.); 
+                       Run part of the output into a delay line, to simulate the distance from the amplifier to the "strings"; 
+                       The delay line feeds back into the Karplus-Strong delay lines. By controlling the amount of the output fed into the delay line, and the length of the delay line,
+                       you can control the intensity and pitch of the feedback note. 

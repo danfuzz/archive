@@ -1,0 +1,16 @@
+${
+
+def x := 11;
+def msg := "";
+
+loop
+{
+   x := x - 1;
+   if (x == 7) { continue }
+   if (x == 0) { break }
+   msg := msg + "I am " + x + " stupid template" +
+       (if (x == 1) {""} else {"s"}) + ".\n";
+}
+
+msg}$\
+I am still a stupid template.

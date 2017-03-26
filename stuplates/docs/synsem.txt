@@ -1,0 +1,494 @@
+Copyright (c) 2002 Dan Bornstein, danfuzz@milk.com. All rights 
+reserved, except as follows:
+
+Permission is hereby granted, free of charge, to any person obtaining a
+copy of this software and associated documentation files (the "Software"),
+to deal in the Software without restriction, including without limitation
+the rights to use, copy, modify, merge, publish, distribute, sublicense,
+and/or sell copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the condition that the above
+copyright notice and this permission notice shall be included in all copies
+or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
+
+##########
+
+
+
+Syntax and Semantics of Stuplates
+---------------------------------
+
+[*] marks things not yet done
+
+
+
+#####
+
+Processing of a document tree:
+
+In general, each file in a document tree is either processed, copied as-is,
+or ignored:
+
+* If a file's name starts with "_", or it has an ancestor directory whose
+  name starts with "_", then it is ignored. Such files are meant to be used
+  as helper files for scripts.
+
+* If a file's name ends with ".stux", ".stut", or ".stu", then it is
+  interpreted as defined below. The resulting file has the same name as the
+  original, but without the ".stux" (etc.) extension.
+
+* All other files are copied as-is.
+
+Each directory to be processed may optionally contain a file named
+"_preface.stu". All of the "_preface.stu" files in the directory path
+leading to a file are evaluated, in descending order, before the final file
+is processed. This allows one to set up a common environment for files that
+share a directory (or superdirectory, etc.).
+
+Predefined variables:
+  outputPath: the partial path to the output file currently being processed.
+
+[*] NOTE: .stux processing is not yet implemented.
+
+
+
+#####
+
+Syntax/semantics of a ".stux" file:
+
+A ".stux" file must be in XML syntax, except that it may contain
+"$" directives as described below for ".stut" files. That is, the
+result of processing the directives in a file must make it end up
+as a valid XML document.
+
+Once parsed as valid XML, a ".stux" file is processed by expanding
+whatever tags have been defined in the environment; tags that have no
+expansion are copied as-is.
+
+
+
+#####
+
+Syntax/semantics of a ".stut" file:
+
+A ".stut" file consists of arbitrary text punctuated by "$" directives.
+Non-directive text is appended to the output file as-is.
+
+The following are the directives:
+
+  ${ statements }: Interpret the given list of statements as a script (see
+    below for ".stu" syntax). The list may span multiple lines. The
+    value of the last statement becomes the result value and is appended
+    to the output file if non-null. (If it is null, then nothing is appended.)
+
+  $$: Append a single "$" to the output file.
+
+  $\<newline>: Ignore newline (that is, do not append anything to the
+    output file). It will also ignore initial whitespace on the following
+    line, so that you can indent in the source without having extra spaces
+    in the output.
+
+  $\b $\f $\n $\r $\t $\uNNNN: Standard C-like escapes (to make carriage
+    return, newline, and other control characters explicit).
+
+  $\X: Where X isn't any of the special other escapes, this is just the
+    literal character X.
+
+  ${-- comment --}: Ignore the comment text (which may consist of any
+    sequence of characters except "--}").
+
+A "$" that isn't followed by one of "$", "{", or "\" is treated literally.
+
+#####
+
+Syntax of a ".stu" file, that is, syntax of Stupid Script:
+
+Stupid Script is an expression language, so almost every statement is an
+expression of some sort. (Definition statements are the exception.) 
+Statements are mostly terminated by semicolons, though top-level if, loop,
+and block expressions are implicitly terminated by their close braces.
+
+As a special case, what would otherwise be a required semicolon may
+be omitted on the final statement in a block delimited by curly braces,
+including a stut block ("${...}").
+
+Comments are introduced with "#" and continue until the end of the line.
+
+The value of a script is the value of its last expression. In the case of
+a .stu file, the value of the last expression becomes the content of the
+output file.
+
+Literal values:
+  "literal string"
+  'also a literal string'
+  1209           # infinite-precision integer
+  2.4 1.0e+4     # 64-bit double-precision floating point number
+  true false     # boolean
+  null           # empty value
+  Infinity NaN   # special double values
+  rx`regular (expression)`
+  `degenerate case of a string`
+  xml`<well>structured xml</well>` [*]
+  xmlFrag`xml <document/> fragment` [*]
+
+A note about string literals: Unlike C/Java strings, Stupid strings can
+contain embedded newlines that aren't preceded by a backslash, and these
+newlines are treated literally. However, all intraline whitespace (spaces
+and tabs) after a newline (whether backslashed or not) are ignored, to
+allow you to indent your strings neatly. If you really want a space at the
+beginning of a line, then quote it with a backslash.
+
+Quasiliteral values:
+  `interpolated string ${"with" + "holes"}`
+  rx`regular (expression ${"with" + "holes"})`
+  xml`<well>structured xml ${"with" + "holes"}</well>` [*]
+  xml`or an xml <document/> <fragment>${"with" + "holes"}</fragment>` [*]
+
+  Quasiliteral values are parsed with the same template parser that parses
+  .stut files, so all the same rules apply about the use of "$".
+
+Quasiliteral patterns:
+  `${george} of the ${jungle}` # simple pattern
+  rx`regular (${var}.*)` [*]
+
+  Quasiliteral patterns are used on the left hand side of an assign-match
+  ("=~") expression. The patterns are parsed with the same template parser
+  that parses .stut files, but each statement block should be a valid
+  assignment target. Particular pattern types may have additional
+  restrictions. For example, the regular expression pattern parser only
+  allows blocks to appear at the start of capturing groups (including the
+  entire expression).
+
+URIs:
+  <file:relative/path/to/file>  # Java File object
+  <file:/absolute/path/to/file> # Java File object
+  <import:pkg.ClassName>        # Java Class object
+
+Special statements (may only appear directly within a statement block {}):
+  def name := value                             # initial variable definition
+  def name                                      # ditto, but value is null
+  def name (arg, arg) { statements }            # define function
+  def "arb-name" { statements }                 # define weird-named function
+  def <tag> (attribs, content) { statements }   # define xml tag expander
+  def &entity; () { statements }                # define xml entity expander
+  def ! (arg) { statements }                    # define operator function
+  def :qual: ! (arg) { statements }             # define qual'ed op function
+
+Expressions:
+  varName                                       # variable name, case sensitive
+  fname "varName"                               # variable name, any chars
+  fname <tag>                                   # variable name for xml tag
+  fname &entity;                                # variable name for xml entity
+  fname ==                                      # variable name for operator
+  fname :qual: %                                # variable name for qual'ed op
+  varName := expr                               # assign to variable
+  pattern =~ expr                               # assign to matches
+  expr[arg, arg]                                # list/map reference
+  expr[arg, arg] := expr                        # list/map assignment
+  funcName (arg, arg)                           # call function
+  [expr, expr]                                  # construct list
+  [expr:expr, expr:expr]                        # construct map
+  []                                            # construct empty list
+  [:]                                           # construct empty map
+  expr.fieldName                                # get field
+  expr.fieldName := expr                        # set field
+  expr.methName (arg, arg)                      # call method
+  fn (arg, arg) { statements }                  # anonymous function
+  fn name (arg, arg) { statements }             # anonymous function w/self-ref
+  fn ~ (arg) { statements }                     # anon fn w/special self-ref
+  fn "x-y" (arg) { statements }                 # ditto (etc.)
+  if (expr) { thenStatements }                  # conditional
+  if (expr) { thenStats } else { elseStats }    # conditional with else
+  if (expr) {...} else if {...} ...             # cascading conditional
+  loop { loopStatements }                       # loop
+  loop name { loopStatements }                  # named loop
+  { statements }                                # block
+  continue                                      # continue innermost loop
+  continue name                                 # continue named loop
+  break                                         # break innermost loop
+  break name                                    # break named loop
+  break (value)                                 # break innermost; yield value
+  break name (value)                            # break named; yield value
+  return                                        # return from innermost func
+  return (value)                                # return innermost; yield value
+  (expression)                                  # parenthesized expression
+  (:qual: expression)                           # op-qualified expression
+  x || y                                        # short-circuit boolean or
+  x && y                                        # short-circuit boolean and
+
+  Note: && and || are not function-calling operators and are not
+        redefinable; they are syntactic, since they can prevent the
+        right-hand-side from being evaluated. := and =~ are also not
+        function-calling operators; they are also syntax, since the left
+        hand sides of each are treated specially. All other operators are
+        affected by operator qualification.
+
+  Note: Member (method and field) lookup is similar in Stupid Script as for
+        Java, but it is not identical: Given a Class object, you may get or
+        call static members of the class or instance members of Class itself.
+        Given any other object, you may get or call either static or instance
+        members of its class. References to classes, such as "System", end
+        up referring to the class object itself; there is no need to append
+        ".class" to get at the actual class object. This *does* allow for
+        an ambiguity that does not arise in Java, in that it is possible to
+        define static methods on a class that have an identical signature to
+        instance methods on class Class, and the interpreter will always pick
+        the instance method in preference.
+
+Operator Summary:
+
+  Operator  Precedence  Associativity Redefinable?
+  --------  ----------  ------------- ------------
+  x := y    1 (loose)   right         no
+  x =~ y    1           right         no
+
+  x || y    2           left          no
+
+  x && y    3           left          no
+
+  x == y    4           left          yes
+  x != y    4           left          yes
+
+  x < y     5           left          yes
+  x > y     5           left          yes
+  x <= y    5           left          yes
+  x >= y    5           left          yes
+
+  x & y     6           left          yes
+  x | y     6           left          yes
+  x ^ y     6           left          yes
+
+  x << y    7           left          yes
+  x >> y    7           left          yes
+
+  x + y     8           left          yes
+  x - y     8           left          yes
+
+  x * y     9           left          yes
+  x / y     9           left          yes
+  x % y     9           left          yes
+  x %% y    9           left          yes
+
+  x ** y    10          left          yes
+
+  +x        11          right         yes
+  -x        11          right         yes
+  !x        11          right         yes
+  ~x        11          right         yes
+
+  x(...)    12          left          no
+  x[...]    12          left          yes
+  x.y       12 (tight)  left          no
+
+Default Operators (:default: qualification)
+  x == y  # same as: compare (x, y) == "eq"
+  x != y  # same as: compare (x, y) != "eq"
+  x < y   # same as: compare (x, y) == "lt"
+  x > y   # same as: compare (x, y) == "gt"
+  x <= y  # same as: { def tmp := compare (x, y); tmp == "lt" || tmp == "eq" }
+  x >= y  # same as: { def tmp := compare (x, y); tmp == "gt" || tmp == "eq" }
+  !x      # boolean not
+  x & y   # bitwise and / boolean and
+  x | y   # bitwise or / boolean or
+  x ^ y   # bitwise xor / boolean xor
+  ~x      # bitwise invert / boolean not
+  x << y  # bitwise shift left
+  x >> y  # bitwise shift right (sign extending)
+  x + y   # numeric addition / string concatenation
+  x - y   # numeric subtraction
+  x * y   # numeric multiplication
+  x / y   # numeric division
+  x % y   # numeric remainder
+  x %% y  # numeric modulo
+  x ** y  # numeric exponentiation
+  -x      # numeric negation
+  +x      # identity
+  x[y]    # array(-like) access
+
+  The default operators & | ^ ~ perform bitwise operations given all
+  numeric arguments or boolean operations if not.
+
+Operators in :boolean:
+  x & y   # boolean and  
+  x | y   # boolean or
+  x ^ y   # boolean xor (same as x != y)
+  ~x      # boolean not (same as !x)
+  x == y  # boolean equality
+  x != y  # boolean inequality (same as x ^ y)
+  !x      # boolean not (same as ~x)
+  -x      # boolean not (same as ~x)
+  +x      # boolean identity
+
+  These operators accept any arguments, and each argument is converted to
+  a boolean before the operator is applied. The transformation is according
+  to the following rules:
+    * null becomes false.
+    * Numeric zero values become false; all other numeric values become true.
+    * Zero-length strings become false; all other string values become true.
+    * All other values become true.
+
+Operators in :double:
+  x == y  # double equality
+  x != y  # double inequality
+  x < y   # double order
+  x > y   # double order
+  x <= y  # double order
+  x >= y  # double order
+  x + y   # double add
+  x - y   # double subtract
+  x * y   # double multiply
+  x / y   # double divide
+  x % y   # double remainder
+  x %% y  # double modulo
+  x ** y  # double exponentiation
+  -x      # double negate
+  +x      # double identity
+
+  These operators accept any arguments, and all arguments are converted to
+  doubles (64-bit IEEE floating point) before the operation is applied. The
+  transformation is according to the following rules:
+    * null becomes 0.
+    * Out-of-range numeric values are converted to an appropriately-signed
+      infinity.
+    * Other numbers are converted to doubles via Number.doubleValue().
+    * Boolean false becomes 0.0; boolean true becomes 1.0.
+    * All other values are first converted to a string (via toString()) and
+      then interpreted as the string representation of standard (scientific)
+      notation floating point, ignoring leading and trailing whitespace and
+      a leading plus sign (after any whitespace). Ignoring case, the strings
+      "NaN", "Infinity" and "-Infinity" turn into the expected constants.
+      This may fail with an exception (NumberFormatException).
+
+  Note that IEEE comparison rules apply to == != < > <= >=, so, for
+  example, NaN comparisons are always false, and +0.0 == -0.0.
+
+Operators in :id:
+  x == y  # object same identity (Java == on objects)
+  x != y  # object different identity (Java != on objects)
+  +x      # object identity
+
+  These operators accept any objects as arguments.
+
+Operators in :int:
+  x == y  # int equality
+  x != y  # int inequality
+  x < y   # int order
+  x > y   # int order
+  x <= y  # int order
+  x >= y  # int order
+  x + y   # int add
+  x - y   # int subtract
+  x * y   # int multiply
+  x / y   # int divide
+  x % y   # int remainder
+  x %% y  # int modulo
+  x ** y  # int exponentiation
+  -x      # int negate
+  x & y   # bitwise and
+  x | y   # bitwise or
+  x ^ y   # bitwise xor
+  x << y  # bitwise shift left
+  x >> y  # bitwise shift right
+  ~x      # bitwise invert
+  +x      # int identity
+
+  These operators accept any arguments, and all arguments are converted to
+  (infinite precision) integers before the operation is applied. The
+  transformation is according to the following rules:
+    * null becomes 0.
+    * Integral numeric values are converted to an infinite precision integer
+      via conversion to 64-bit long integer.
+    * Non-integral numeric values get truncated.
+    * Boolean false becomes 0; boolean true becomes 1.
+    * All other values are first converted to a string (via toString()) and
+      then interpreted as the string representation of integral values in
+      base 10 (no interpretation of "0" or "0x" prefixes, etc.), ignoring
+      leading and trailing whitespace and a leading plus sign (after any
+      whitespace). This may fail with an exception (NumberFormatException).
+
+Operators in :string:
+  x == y  # string equality
+  x != y  # string inequality
+  x < y   # string order
+  x > y   # string order
+  x <= y  # string order
+  x >= y  # string order
+  x + y   # string concatenation  
+  +x      # string identity
+
+  These operators accept any arguments, and the arguments are converted
+  to strings before the operation is applied. This is accomplished by
+  calling the toString() method on non-null arguments and using the
+  (interned) string "null" in place of null arguments.
+
+Predefined variables:
+  thisEnv: the current variable definition environment
+  Class: the class java.lang.Class
+  System: the class java.lang.System
+  corresponding other classes in java.lang [*]
+
+Built-in functions:
+  compare (o1, o2): compare the two objects, as is done for the operators
+    ==, !=, <, <=, >=, or >. This will return one of "lt" "eq" "gt" "ne" if
+    (respectively) o1 < o2, o1 == o2, o1 > o2, or o1 and o2 are not
+    comparable (have no order with respect to each other). [*]
+    1. If x and y are both null, then the result is "eq".
+    2. If either x or y is null, then the result is "ne".
+    3. If x and y are both integral types, then convert both to BigInteger and
+       compare. If either conversion throws a RuntimeException, then contine
+       with the next step.
+    4. If x and y are both numeric types, then convert both to Double and
+       compare. Note that this means Nan > Infinity and 0.0 > -0.0 in this 
+       case. If either conversion throws a RuntimeException, then continue
+       with the next step.
+    5. If either x or y is a string, then convert the non-string to a string
+       using the toString() method, and compare by string compareTo. If the
+       toString() throws a RuntimeException, then continue with the next
+       step.
+    6. if x implements Comparable, compare using x.compareTo(y). If the
+       comparison throws a RuntimeException, then continue with the next step.
+    7. Compare using x.equals (y). If this is true, then the result is "eq";
+       if this is false or the comparison throws a RuntimeException, then
+       the result is "ne".
+
+  makeList (elem1, ...): make a list out of all the arguments. This is the
+    function behind the [elem1,...] syntax.
+  makeMap (key1, val1, ...): make a map out of all the arguments. This is the
+    function behind the [key:value,...] syntax.
+  simpleMatch (assigns, value, templ1, ...): make a quasipattern. This is the
+    function behind the `quasi` syntax when used on the left-hand-side of a
+    match assignment.
+  strcat (elem1, ...): make a string by concatenating all the arguments. This
+    is the function behind the `quasi` syntax when used in a normal expression
+    context.
+  evalTemplate (env, string): perform template evaluation (command
+    substitution, etc.) on the given string, using definitions in the given
+    environment [*]
+  evalXml (env, xml): perform XML evaluation (call xml tag expanders
+    recursively) on the given xml node or fragment, using definitions in
+    the given environment [*]
+
+Methods on file objects:
+  file.loadText (): load the contents of the file as a string [*]
+
+Methods on string objects:
+  string.qatt (): return the value of the string in quoted attribute value
+    form (e.g., qatt("bl&oo") == "\"bl&amp;oo\"") [*]
+
+Methods on xml node objects:
+  node.tag (): get the tag of the node [*]
+  node.get (attribName): get the value of an attribute [*]
+  node.content (): get the content of the node, as an xml fragment [*]
+
+Methods on xml fragment objects:
+  node.get (nth): get the nth node of the fragment [*]
+  node.length (): get the number of nodes in the fragment [*]
+  node.match (tagName): get the first node in the fragment that has the 
+    given tag name [*]
