@@ -1,0 +1,6 @@
+* make the tests easier to run
+* make it consistent about requiring a leading slash on specified paths
+* add support for basic auth
+* add test cases for HTMLUtils
+* add test cases for new stuff in URLUtils
+* add test cases for new stuff in MethodHandler

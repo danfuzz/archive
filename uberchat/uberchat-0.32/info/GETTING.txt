@@ -1,0 +1,6 @@
+Getting the latest version of UberChat
+--------------------------------------
+
+As of this writing, the latest version of UberChat may be found at:
+
+    http://www.milk.com/dropoff/

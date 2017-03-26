@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# set up prog to be the name of this script, including following symlinks
+prog=`type -p $0` >/dev/null 2>&1
+while [ -L "$prog" ]
+do
+    newprog=`expr "\`/bin/ls -l "$prog"\`" : ".*$prog -> \(.*\)"`
+    expr "$newprog" : / >/dev/null || newprog="`dirname $prog`/$newprog"
+    prog="$newprog"
+done
+
+progclasses=`dirname $prog`'/../lib/uberchat.jar'
+
+if [ -z "${CLASSPATH}" ] ; then
+    CLASSPATH="$progclasses"
+else
+    CLASSPATH="$CLASSPATH"':'"$progclasses"
+fi
+
+export CLASSPATH
+
+java com.milk.uberchat.gui.Main

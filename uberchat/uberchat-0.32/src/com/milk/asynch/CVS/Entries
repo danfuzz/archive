@@ -1,0 +1,18 @@
+/CharArrayToStringFilter.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/Filter.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/IdleFilter.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/JustReceiver.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/JustSender.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/LineFilter.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/MailBox.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/ReaderSender.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/Receiver.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/Rendezvous.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/Resender.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/SendFilter.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/SendSource.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/Sender.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/SenderCutException.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/TimedSend.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/FifoQueue.java/1.2/Fri Nov  2 17:08:52 2001//
+D

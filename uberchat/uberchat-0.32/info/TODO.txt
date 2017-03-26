@@ -1,0 +1,133 @@
+TODO List for UberChat
+----------------------
+
+This list is in no particular order.
+
+Specific bugs:
+* Propagate name change fixes from irc to icb client -or- abstract out
+the whole gafoofoo
+
+Big-ticket items:
+* Prefs
+* more complete info (user info like idle time, email address; channel
+info like who's moderator, etc.)
+* make the actual chat window into a more real form
+* command-line interface ("/msg", "/thinks", etc.)
+* logging support
+* some sort of scripting support
+* some sort of "ignore" support
+* full console gui
+
+Nebulous items:
+* move scroll-to-bottom stuff from LocusPanel into new base class; make
+the debug window use it too
+* redo icb input filter to be a bit cleaner structured (more like the irc
+one); also, make icb stuff more asynch-friendly
+* Thread safety
+* event caching, probably a feature of ListenerList
+* TextFieldWithHistory
+* friends lists
+* error handling: more and better
+* make tree views more generic
+* make real main panel
+* make the existing protocol handlers better
+* (visible) time stamps
+* make the ui be able to beep on beeps
+* afk/away support, including at the interface layer
+* remember window positioning
+* topicChanged event should be able to know who did the changing
+
+-------------------------------------------------------------------------------
+
+Indicative Correspondence
+-------------------------
+
+Date: 2/4/99
+To: sax <sax@severe.neurosis.net>
+Subject: Re: uberchat wish list
+
+>- add command line support i.e. if i type "/m danfuzz hi" in the main chat
+>window it messages you the same as if i clicked new window on your name.
+
+Yeah, I thought about doing some sort of commandline stuff, but it
+prolly won't happen till a lot more of the system is fleshed out.
+
+>- make it configurable so that you can specify if you want messages to
+>come up in the main chat window or in their own window.
+
+I want to eventually have how messages appear be *very* configurable,
+e.g., all channels and *most* private stuff in one window, but private
+with person X in its own window, etc etc. Again, this is lower priority
+than just the basics...like a prefs file that remembers your icb host
+and port etc.!
+
+>- when message windows pop up, if that window has been up before (i.e. if
+>you've messaged that person already), have the window come up with the
+>same size and location as it was when you closed it. (this one would rock
+>hard)
+
+I definitely want to do this, but I messed up a bit on the way messages
+make their ways into the actual windows. This'll get fixed when I do
+the other config stuff.
+
+>- configuring color would be fun
+
+...and the font and indentation behavior too. I already have the code
+set up internally to be able to do this. It's just a matter of having the
+dialog boxes and the prefs file to save your tweaking in.
+
+>- since scrolling is a bit slow, maybe have it scroll when the text
+>reaches 2-3 lines from the bottom.
+
+I also need to redo how scrolling works at all. One major thing
+I want is to be able to turn off auto-scroll-to-bottom when messages
+come in.
+
+>- being able to see people's email, idle time, and whether or not they are
+>registered would rock.
+
+Yeah, that's fairly high on my list right now. One of my problems is
+figuring out how to get this to work in a generic-enough way to include
+the useful info from the various different kinds of servers (icb, irc,
+spacebar, etc.) without having too much cruft. E.g., icb is the only
+server I know about that has this registered/unregistered distinction.
+I don't want to have code for the UI that has to explicitly know
+about registration, but I *do* want it to show up. I'm thinking along
+the lines of an arbitrary property key-value sort of thing.
+
+>if you dont want to hear this from me, just tell me to shut the funk up
+>and be happy with what i got.
+
+Please do continue to comment, but yes, do keep in mind that I know
+it's still very rough and incomplete. And also keep in mind that I
+have *real* work to do too!
+
+That being said, my current tasks in approximate order are:
+
+* Object editor system, which will be the underpinnings of all the prefs
+editing stuff. This is a tricky thing to get right, but once I do, it'll
+make a lot of other stuff a lot easier.
+* Fix the underlying chat interfaces (error message stuff, user/channel
+info, etc.).
+* Redo the "create system" stuff to use the object editor.
+* Make it able to save and load prefs.
+* Make chat windows nicer (buttons for common actions, have user/channel
+list, have controllable font/color/etc).
+* Redo main window, pretty much from scratch.
+
+-dan
+
+####################
+
+Date: 2/4/99
+To: sax <sax@severe.neurosis.net>
+Subject: Re: oh yeah
+
+>oh yeah im rather fond of my timestamped lines in zenicb.
+>that would be a cool feature, if maybe the user could specify to turn it
+>on or not..
+
+Actually, the thing *I* want is for the program to insert a line
+saying what time it is every N minutes. More prefs!
+
+-dan

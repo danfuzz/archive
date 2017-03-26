@@ -1,0 +1,26 @@
+/BadArgumentException.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/BadKeyException.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/BadValueException.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/BaseEvent.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/BugInClientException.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/BugInSubclassException.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/Comparator.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/EqComparator.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/EqualsComparator.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/FalsePredicate.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/FlatTable.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/ImmutableException.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/ListenerList.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/ObjectPredicate.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/Orderable.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/Orderer.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/PriorityQueue.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/RuntimeSubException.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/ShouldntHappenException.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/StandardOrderer.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/StdTableElement.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/Table.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/TableElement.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/TruePredicate.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+/UnorderedException.java/1.1.1.1/Tue Dec 26 18:21:32 2000//
+D/test////

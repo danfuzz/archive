@@ -1,0 +1,25 @@
+<body>
+<p>This package contains a complete, but minimal, implementation of an HTTP
+1.0 and 1.1 compliant web server. It is not intended to be ultra-efficient;
+rather the tradeoff is in favor of simplicity and smallness (both code size
+and memory overhead) over efficiency.</p>
+
+<p>The server itself is mostly encoded in the class {@link
+com.milk.tinyweb.TinyWebServer}. You will have to instantiate an instance
+of it, one way or another. Once instantiated, you tell it how to process
+requests by calling {@link com.milk.tinyweb.TinyWebServer#putDocument},
+handing it various implementations of {@link
+com.milk.tinyweb.DocumentHandler}. There are several concrete
+implementations of this interface to cover some of the usual cases, but you
+can implement your own too, for whatever you need.</p>
+
+<p>The <code>examples</code> subpackage contains a couple of working
+examples of how to use the package. That, along with the javadoc, are
+hopefully enough for you to figure out how to get things going.</p>
+
+<p>The <code>testing</code> subpackage contains JUnit-based tests. In order
+to compile and run them, you will need to place a copy of
+<code>junit.jar</code> (3.7 or later) in the <code>build/lib</code>
+directory.</p>
+
+</body>

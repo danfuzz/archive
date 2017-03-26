@@ -1,0 +1,122 @@
+#!/bin/sh
+#
+# Derives and prints a package name from a set of Java sources. If
+# there is an inconsistency, then this prints out an error to stderr,
+# prints "error" to stdout, and exits with a nonzero status. If the
+# "--path" option is passed as the first argument, then instead of
+# printing a package name, it prints out the path prefix associated
+# with the package (e.g., "foo/bar" for the package "foo.bar").
+
+# Copyright (c) 2000-2001 Dan Bornstein, danfuzz@milk.com. All rights 
+# reserved, except as follows:
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the condition that the above
+# copyright notice and this permission notice shall be included in all copies
+# or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+
+returnPath=no
+if [ "x$1" = 'x--path' ]; then
+    returnPath=yes
+    shift
+fi
+
+if [ "$#" = "0" ]; then
+    echo "ERROR: No files specified." 1>&2
+    echo "error"
+    exit 1
+fi
+
+# platform-dependent settings
+if [ -r /bin/nawk ]; then
+    awkcmd='nawk'
+else
+    awkcmd='awk'
+fi
+
+# export current directory to awk (so it can expand filenames in the grotty
+# bit where "filepack" is mentioned); bash does this automatically (as
+# the variable $PWD) but traditional sh (aka what runs on Solaris) doesn't
+CURDIR=`pwd`
+export CURDIR
+
+# pkgStuff will either contain the name of the package of all the files
+# followed by the partial directory form (just the normal "." to "/"
+# translation), or it will contain an error message stating what the
+# problem is. In the error case, it exits with 1.
+pkgStuff=`$awkcmd '                                                           \
+BEGIN           { curdir = ENVIRON["CURDIR"];                                 \
+                  errors = 0;                                                 \
+                 }                                                            \
+/^package[ \t]/ { onepack = $2;                                               \
+                  gsub(/[^a-zA-Z\.]/, "", onepack);                           \
+                  packs[onepack] = onepack;                                   \
+		  filepack = FILENAME;                                        \
+                  if (filepack !~ /^\//) filepack = curdir "/" filepack;      \
+		  gsub(/\/\.\//, "/", filepack);                              \
+                  while (filepack ~ /[^\/]*\/\.\.\//)                         \
+                      sub(/[^\/]*\/\.\.\//, "", filepack);                    \
+                  gsub(/\/[^\/]*$/, "", filepack);                            \
+                  filepack = substr(filepack, length(filepack) -              \
+                      length (onepack) + 1);                                  \
+                  gsub(/\//, ".", filepack);                                  \
+		  if (filepack != onepack) {                                  \
+                      printf ("ERROR: %s has a directory/package mismatch.\n",\
+                              FILENAME);                                      \
+                      errors = 1;                                             \
+                  }                                                           \
+                }                                                             \
+END             { if (errors) exit 1;                                         \
+                  count = 0;                                                  \
+                  for (p in packs) count++;                                   \
+		  if (count == 0) {                                           \
+		      printf("ERROR: No package statements found in any "     \
+			     "of the files.\n");                              \
+                      exit 1;                                                 \
+                  }                                                           \
+                  if (count != 1) {                                           \
+                      printf("ERROR: The files listed are not all of the "    \
+		             "same package.\nThese are the packages:");       \
+                      for (p in packs) printf(" %s", packs[p]);               \
+                      printf("\n");                                           \
+                      exit 1;                                                 \
+                  }                                                           \
+                  print onepack;                                              \
+                  gsub(/\./, "/", onepack);                                   \
+                  print onepack;                                              \
+                }                                                             \
+' "$@"`
+
+if [ "$?" = "1" ]; then
+    # error in declarations
+    echo "$pkgStuff" 1>&2
+    echo "error"
+    exit 1
+fi
+
+# extract the constituents (BUG: is there a better way to do this?)
+for p in $pkgStuff; do
+    if [ "x$pkgName" = "x" ]; then
+        pkgName=$p
+    else
+        pkgPath=$p
+    fi
+done
+
+if [ $returnPath = "yes" ]; then
+    echo $pkgPath
+else
+    echo $pkgName
+fi

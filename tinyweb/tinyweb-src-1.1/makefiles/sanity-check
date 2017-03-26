@@ -1,0 +1,99 @@
+#!/bin/sh
+#
+# Sanity check for Makefiles and the version of make in use.
+
+# Copyright (c) 2000-2001 Dan Bornstein, danfuzz@milk.com. All rights 
+# reserved, except as follows:
+# 
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the condition that the above
+# copyright notice and this permission notice shall be included in all copies
+# or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+
+if [ -r /bin/nawk ]; then
+    minminver=79
+    awkcmd=nawk
+else
+    minminver=77
+    awkcmd=awk
+fi
+
+# extract the version info of make
+eval `\
+    make --version | \
+    $awkcmd '{ split($4,ver,"[.,]"); \
+               printf("gnu=%s; maj=%s; min=%s", $1, ver[1], ver[2]); \
+               exit }'`
+
+# test stuff about the version of make
+problem=none
+if [ "$gnu" != "GNU" ]; then
+    problem="You don't seem to have GNU make installed."
+elif [ "$maj" -lt "3" ]; then
+    problem="You seem to be running an out-of-date (pre-3.$minminver) make."
+elif [ "$maj" -gt "3" ]; then
+    : # no problem
+elif [ "$min" -lt "$minminver" ]; then
+    problem="You seem to be running an out-of-date (pre-3.$minminver) make."
+fi
+
+if [ "$problem" != "none" ]; then
+    exec 1>&2
+    echo "#################### ERROR"
+    echo "$problem"
+    echo "make --version reports:"
+    printf "  "
+    make --version | head -1
+    echo "Recommendation: Upgrade make on this machine."
+    echo "#################### END ERROR"
+    exit 1
+fi
+
+# check to see if there is a file/target conflict; see the error message
+# below for details
+baddies=`$awkcmd '\
+    BEGIN           { goodies[notreallythere] = "notreallythere";    \
+                      baddies[notreallythere] = "notreallythere"; }  \
+    /^.PHONY:/      { for (i = 2; i <= NF; i++) goodies[$i] = $i;    \
+                      next }                                         \
+    /^[^ :]+:[ \t]/ { baddy = substr($1,1,length($1)-1);             \
+                      baddies[baddy] = baddy }                       \
+    /^[^ :]+:$/     { baddy = substr($1,1,length($1)-1);             \
+                      baddies[baddy] = baddy }                       \
+    END             { for (i in goodies) delete baddies[goodies[i]]; \
+                      for (i in baddies) print baddies[i] }'         \
+    Makefile`
+
+for target in $baddies; do
+    if [ -r $target ]; then
+	exec 1>&2
+        echo "#################### ERROR"
+        echo "There is a file/directory named '$target' and a Makefile rule"
+        echo "with the same name that is *not* marked as '.PHONY'. This is a"
+        echo "sign of trouble, since make may have difficulties with this"
+        echo "situation. The usual cause of the problem is one of these:"
+        echo "  * You did a cvs update or checkout without the '-P' option."
+        echo "  * Someone (you?) made a new file/directory with that name."
+        echo "  * Someone (you?) made a new Makefile rule with that name."
+        echo "In situation #1, simply redo your cvs command with '-P' and"
+        echo "all should be well. In the other two cases, you need to do one"
+        echo "of the following, as appropriate:"
+	echo "  * Add a '.PHONY' line for the rule."
+	echo "  * Rename the Makefile rule."
+        echo "  * Rename the file/directory."
+        echo "#################### END ERROR"
+        exit 1
+    fi
+done
