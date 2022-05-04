@@ -1,0 +1,39 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Int literal demo, Layer 2 specific
+##
+
+
+##
+## Private Definitions
+##
+
+fn msg(v) {
+    note("Got: \%q(v)")
+};
+
+
+##
+## Main Tests
+##
+
+note("Layer 0...");
+
+msg(0);
+msg(-9);
+msg(20);
+msg(98_765);
+msg(-12_345);
+
+note("\nLayer 2...");
+
+msg(0x1234abcd);             ## Decimal 305441741.
+msg(-0x_ABCDEF);             ## Decimal -11259375.
+msg(0b0);
+msg(0b1);
+msg(-0b1);
+msg(-0b11);                  ## Decimal -3.
+msg(0b1011_0111_1110_1111);  ## Decimal 47087.

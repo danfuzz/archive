@@ -1,0 +1,50 @@
+# Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+# Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+# Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+#
+# Project information
+#
+
+language: c
+
+script: ./demo/run-all --runtime=tot --compiler=simple --clean-build --time
+
+
+#
+# Configurations to build
+#
+
+os:
+  - linux
+  - osx
+
+compiler:
+  - clang
+  - gcc
+
+matrix:
+  # Uncomment this to disable Linux if/when it is known-broken.
+  # allow_failures:
+  #   - os: linux
+
+  # Don't bother with Gcc on OS X.
+  exclude:
+    - os: osx
+      compiler: gcc
+
+# This tells Travis that we want to use their new Docker-based system.
+sudo: false
+
+
+#
+# Branches to build
+#
+
+branches:
+  only:
+    # We care deeply about `master`.
+    - master
+
+    # So we can get Travis to try things out without polluting `master`.
+    - /^travis-.*$/

@@ -1,0 +1,644 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Module loading mechanism
+##
+## **Note:** When running fully interpreted, this file is loaded three times.
+## The first time is before any other in-language definitions are made.
+
+## This directive only has an effect when the module system loads *itself*
+## in a chained loader. The primordial / bootstrap module system gets loaded
+## as a layer 0 file no matter what the directive says (or doesn't say).
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+## Bootstrap modules `core.Code`, `core.Io0`, and `core.Lang0`. Bindings
+## are all as documented in the spec. These are set up here in order to
+## avoid the infinite regress of trying to load these modules as their
+## own prerequisites.
+
+def $Code = @{
+    eval:       Code_eval,
+    evalBinary: Code_evalBinary
+};
+
+def $Io0 = @{
+    cwd:           Io0_cwd,
+    fileType:      Io0_fileType,
+    readDirectory: Io0_readDirectory,
+    readFileUtf8:  Io0_readFileUtf8,
+    readLink:      Io0_readLink,
+    writeFileUtf8: Io0_writeFileUtf8
+};
+
+def $Lang0 = @{
+    languageOf:      Lang0_languageOf,
+    parseExpression: Lang0_parseExpression,
+    parseProgram:    Lang0_parseProgram,
+    simplify:        Lang0_simplify,
+    tokenize:        Lang0_tokenize
+};
+
+## Makes an entry for `BOOTSTRAP_MODULES`.
+fn makeBootstrapEntry(exports) {
+    def exportKeys = Map.castFrom(exports).keyList();
+    return @module{
+        exports,
+        info: @{
+            exports:   @{exportKeys*: Value},
+            imports:   @{},
+            resources: @{}
+        }
+    }
+};
+
+def BOOTSTRAP_MODULES = {
+    @external{name: "core.Code"}:  makeBootstrapEntry($Code),
+    @external{name: "core.Io0"}:   makeBootstrapEntry($Io0),
+    @external{name: "core.Lang0"}: makeBootstrapEntry($Lang0)
+};
+
+
+##
+## Private Definitions
+##
+
+## Secrets used to control access classes defined in this file.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+## Default language module to use, when language is unspecified.
+def DEFAULT_LANGUAGE = "core.Lang2";
+
+## Set-like map of characters that are allowed in module and file components.
+def VALID_COMPONENT_CHARS = {
+    "_$abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"*: null
+};
+
+## Gets the file name suffix of the last component of the given path.
+## **Note:** This is written in a super-oddball way, because of how little
+## core library is actually available at this point.
+fn fileNameSuffix(path) {
+    var gotDot = 0;
+    var result = "";
+
+    path.forEach
+        { ch ->
+            If.is { Cmp.eq(ch, "/") }
+                {
+                    ## New path component.
+                    gotDot := 0;
+                }
+                {
+                    If.is { Cmp.eq(ch, ".") }
+                        {
+                            gotDot := 1;
+                            result := "";
+                        }
+                        { result := result.cat(ch) }
+                }
+        };
+
+    return If.is { Cmp.eq(gotDot, 0) }
+        { "" }
+        { result }
+};
+
+## Helper for `checkExternalSource`: Validates a character pair.
+fn checkExternalSourcePair(lastCh, ch) {
+    If.is { Cmp.eq(ch, ".") }
+        {
+            If.is { Cmp.eq(lastCh, ".") }
+                { die("Invalid external source: empty component") };
+            return
+        };
+
+    If.not { VALID_COMPONENT_CHARS.get(ch) }
+        { die("Invalid external source: bad character \"", ch, "\"") }
+};
+
+## Validates an external `source`. This returns the given `source` if it
+## is a valid external source, or void if it is some other kind of source.
+## If `source` is marked `@external` but is improperly-formed, this dies
+## with an error.
+fn checkExternalSource(source) {
+    If.not { source.hasName(@external) }
+        { return };
+
+    def name = If.or { source::name }
+        { die("Invalid external source: no `name`") };
+
+    If.not { String.accepts(name) }
+        { die("Invalid external source: `name` not a string") };
+    If.is { Cmp.eq(name, "") }
+        { die("Invalid external source: empty `name`") };
+
+    var lastCh = ".";  ## Init to `"."` to make the first check work out.
+
+    name.forEach
+        { ch ->
+            checkExternalSourcePair(lastCh, ch);
+            lastCh := ch
+        };
+
+    checkExternalSourcePair(lastCh, ".");
+    return source
+};
+
+## Helper for `checkInternalSource`: Validates a character pair.
+fn checkInternalSourcePair(lastCh, ch) {
+    If.is { Cmp.eq(ch, "/") }
+        {
+            If.is { Cmp.eq(lastCh, "/") }
+                { die("Invalid internal source: empty component") };
+            If.is { Cmp.eq(lastCh, ".") }
+                { die("Invalid internal source: empty suffix") };
+            return
+        };
+
+    If.is { Cmp.eq(ch, ".") }
+        {
+            If.is { Cmp.eq(lastCh, "/") }
+                { die("Invalid internal source: component-initial dot") };
+            If.is { Cmp.eq(lastCh, ".") }
+                { die("Invalid internal source: double dot") };
+            return
+        };
+
+    If.not { VALID_COMPONENT_CHARS.get(ch) }
+        { die("Invalid internal source: bad character \"", ch, "\"") }
+};
+
+## Validates an internal `source`. This returns the given `source` if it
+## is a valid internal source, or void if it is some other kind of source.
+## If `source` is marked `@internal` but is improperly-formed, this dies
+## with an error.
+fn checkInternalSource(source) {
+    If.not { source.hasName(@internal) }
+        { return };
+
+    def name = If.or { source::name }
+        { die("Invalid internal source: no `name`") };
+
+    If.not { String.accepts(name) }
+        { die("Invalid internal source: `name` not a string") };
+    If.is { Cmp.eq(name, "") }
+        { die("Invalid internal source: empty `name`") };
+
+    var lastCh = "/";  ## Init to `"/"` to make the first check work out.
+
+    name.forEach
+        { ch ->
+            checkInternalSourcePair(lastCh, ch);
+            lastCh := ch;
+        };
+
+    checkInternalSourcePair(lastCh, "/");
+    return source
+};
+
+## Validates an absolute file path string. It must be a string and start with
+## `"/"`.
+fn checkAbsolutePath(path) {
+    If.is { Cmp.eq(path, "") }
+        { die("Invalid file path: empty string") };
+    If.not { String.accepts(path) }
+        { die("Invalid file path: not a string") };
+    If.not { Cmp.eq(path.get(0), "/") }
+        { die("Invalid file path: not absolute") }
+};
+
+## Helper for `resolve` methods, which does most of the work of `loaded`
+## map management.
+fn resolveHelper(loadedBox, source, resolveFn) {
+    ## The loaded map maps paths to `@loading` for a load-in-progress,
+    ## `@notFound` for a known-missing module, and to a `@module` for
+    ## a successfully-loaded result.
+    If.value { (loadedBox*).get(source) }
+        { found ->
+            If.is { found.hasName(@module) }
+                { return found };
+            If.is { Cmp.eq(found, @notFound) }
+                { return };
+            If.is { Cmp.eq(found, @loading) }
+                { die("Module load loop: ", sourceString(source)) };
+        };
+
+    loadedBox* := {(loadedBox*)*, (source): @loading};
+    def result = If.or { resolveFn() } { @notFound };
+    loadedBox* := {(loadedBox*)*, (source): result};
+
+    return? If.not { Cmp.eq(result, @notFound) }
+        { result }
+};
+
+## Returns a human-oriented string name for a source.
+fn sourceString(source) {
+    If.is { source.hasName(@internal) }
+        { return "./".cat(source::name) };
+    If.is { source.hasName(@external) }
+        { return source::name };
+
+    die("Bad module / resource `source`.")
+};
+
+## Loads the standard global environment using the given `loader`.
+fn loadGlobals(loader) {
+    return
+        loadModule(loader, @external{name: "core.Globals"})::fullEnvironment()
+};
+
+## Given source text, returns a parsed tree form, using the given `loader`
+## to find the apprpriate parser and to do any required module resolution.
+fn treeFromText(loader, text) {
+    def languageName = If.or { $Lang0::languageOf(text) }
+        { DEFAULT_LANGUAGE };
+    def lang = loadModule(loader, @external{name: languageName});
+
+    fn resolver(source) {
+        return loader.resolve(source)
+    };
+
+    return lang::simplify(lang::parseProgram(text), resolver);
+};
+
+
+##
+## Global `Loader` helper functions.
+##
+
+## Documented in spec.
+export fn loadModule(loader, source) {
+    return If.value { loader.resolve(source) }
+        { resolved -> resolved::exports }
+        { die("Module not found: ", sourceString(source)) }
+};
+
+## Documented in spec.
+export fn loadResource(loader, source, format) {
+    return If.or { loader.readResource(source, format) }
+        { die("Resource not found: ", sourceString(source)) }
+};
+
+
+##
+## Class Definition: null `Loader`
+##
+
+class NullLoader
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    .readResource(source, format) {
+        ## Returns void, always.
+    };
+
+    ## Documented in spec.
+    .resolve(source) {
+        return? If.is { checkExternalSource(source) }
+            { BOOTSTRAP_MODULES.get(source) }
+    };
+};
+
+## The one instance of the class.
+def nullLoader = NullLoader.(NEW)();
+
+## Helper to "massage" `null` into `nullLoader` and pass everything
+## else through as-is.
+fn fixNullLoader(loader) {
+    return If.is { Cmp.eq(loader, null) }
+        { nullLoader }
+        { loader }
+};
+
+
+##
+## Class Definition: `ExternalLoader`
+##
+## Payload:
+## * `nextLoader` -- next loader to check when trying to find a module.
+## * `basePath` -- absolute path prefix for all loading, with trailing `/`.
+##   Direct subdirectory names correspond to modules.
+## * `globals` -- global variable environment to use when loading.
+## * `loadedBox` -- map from partial paths to the results of loading.
+
+## Helper for `resolve` which does the actual resolution / loading.
+fn doExternalResolve(loader, source) {
+    def data = loader.(ACCESS)();
+    def modulePath = data::basePath.cat(source::name);
+
+    return? If.is { Cmp.eq($Io0::fileType(modulePath), @directory) }
+        {
+            note("    ", sourceString(source));
+
+            def innerLoader =
+                InternalLoader.new(modulePath, data::globals, loader);
+            def result = resolveMain(innerLoader);
+
+            note("        Done.");
+            result
+        }
+};
+
+export class ExternalLoader
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    class.new(path, globals, nextLoader) {
+        checkAbsolutePath(path);
+
+        ## Check for existence and directoriness.
+        def pathType = $Io0::fileType(path);
+        If.is { Cmp.eq(pathType, @absent) }
+            {
+                ## No such file or directory.
+                return fixNullLoader(nextLoader)
+            };
+        If.not { Cmp.eq(pathType, @directory) }
+            {
+                die("Module loader path exists but is not a directory: ",
+                    path)
+            };
+
+        return this.(NEW)(
+            @{
+                basePath: path.cat("/"),
+                globals,
+                loadedBox: Cell.new({}),
+                nextLoader: fixNullLoader(nextLoader)
+            })
+    };
+
+    ## Documented in spec.
+    .readResource(source, format) {
+        ## Always just defer to the next loader.
+        def data = this.(ACCESS)();
+        return? data::nextLoader.readResource(source, format)
+    };
+
+    ## Documented in spec.
+    .resolve(source) {
+        def data = this.(ACCESS)();
+
+        If.not { checkExternalSource(source) }
+            {
+                ## Not an external source, so punt to the next loader.
+                return? data::nextLoader.resolve(source)
+            };
+
+        fn externalResolve() {
+            return? If.or
+                { doExternalResolve(this, source) }
+                { data::nextLoader.resolve(source) }
+        };
+
+        return? resolveHelper(data::loadedBox, source, externalResolve)
+    };
+};
+
+
+##
+## Class Definition: `InternalLoader`
+##
+## Payload:
+## * `nextLoader` -- next loader to check when trying to find a module.
+## * `basePath` -- absolute path prefix for all loading, with trailing `/`.
+## * `globals` -- global variable environment to use when loading.
+## * `loadedBox` -- map from partial paths to the results of loading.
+
+## Convenient helper which just resolves a top-level `main` file.
+fn resolveMain(loader) {
+    return? loader.resolve(@internal{name: "main"})
+};
+
+## Helper for `resolve` which does the actual resolution / loading.
+fn doInternalResolve(loader, source) {
+    note("        ", sourceString(source));
+
+    def data = loader.(ACCESS)();
+    def pathPrefix = data::basePath.cat(source::name);
+    def binPath = pathPrefix.cat(".samb");
+
+    If.is { Cmp.eq($Io0::fileType(binPath), @file) }
+        {
+            def func = $Code::evalBinary(data::globals, binPath);
+            return If.or { func() }
+                { die("No result from binary module: ", sourcePath) }
+        };
+
+    def sourcePath = pathPrefix.cat(".sam");
+    If.is { Cmp.eq($Io0::fileType(sourcePath), @file) }
+        {
+            def text = $Io0::readFileUtf8(sourcePath);
+            def tree = treeFromText(loader, text);
+            def func = $Code::eval(data::globals, tree);
+
+            return If.or { func() }
+                { die("No result from module: ", sourcePath) }
+        };
+
+    ## No matching file found. Return void.
+    return
+};
+
+## `readResource` implementation for format `type`.
+fn readResource_type(fullPath) {
+    return $Io0::fileType(fullPath)
+};
+
+## `readResource` implementation for format `utf8`.
+fn readResource_utf8(fullPath) {
+    If.not { Cmp.eq($Io0::fileType(fullPath), @file) }
+        { die("Missing resource: ", fullPath) };
+
+    return $Io0::readFileUtf8(fullPath)
+};
+
+## Map from format names to corresponding `readResource` implementations.
+def INTERNAL_READERS = {
+    @type: readResource_type,
+    @utf8: readResource_utf8
+};
+
+export class InternalLoader
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    class.new(path, globals, nextLoader) {
+        checkAbsolutePath(path);
+        def basePath = path.cat("/");
+        def modulesDir = basePath.cat("modules");
+        def externLoader =
+            ExternalLoader.new(modulesDir, globals, fixNullLoader(nextLoader));
+
+        ## Forward declaration, for recursive references in the `module_*`
+        ## functions immediately below.
+        def loader;
+
+        fn glo_loadModule(source) {
+            return loadModule(loader, source)
+        };
+        fn glo_loadResource(src, fmt) {
+            return loadResource(loader, src, fmt)
+        };
+        fn glo_thisLoader() {
+            return loader
+        };
+
+        def fullGlobals = @{
+            globals*,
+            loadModule:   glo_loadModule,
+            loadResource: glo_loadResource,
+            thisLoader:   glo_thisLoader
+        };
+
+        loader := this.(NEW)(
+            @{
+                basePath,
+                globals:    fullGlobals,
+                loadedBox:  Cell.new({}),
+                nextLoader: externLoader
+            });
+
+        return loader
+    };
+
+    ## Documented in spec.
+    .readResource(source, format) {
+        def data = this.(ACCESS)();
+
+        If.not { checkInternalSource(source) }
+            {
+                ## Not an internal source, so punt to the next loader.
+                return? data::nextLoader.readResource(source, format)
+            };
+
+        def fullPath = data::basePath.cat(source::name);
+
+        return If.value { INTERNAL_READERS.get(format) }
+            { reader -> reader(fullPath) }
+            { die("Unsupported resource format: ", format) }
+    };
+
+    ## Documented in spec.
+    .resolve(source) {
+        def data = this.(ACCESS)();
+
+        If.not { checkInternalSource(source) }
+            {
+                ## Not an internal source, so punt to the next loader.
+                return? data::nextLoader.resolve(source)
+            };
+
+        ## Unlike with `ExternalLoader`, we don't walk up the parent chain if
+        ## resolution fails, as that would break the semantic model. (We don't
+        ## want to end up finding a parent loader's internal file.)
+        fn internalResolve() {
+            return? doInternalResolve(this, source)
+        };
+
+        return? resolveHelper(data::loadedBox, source, internalResolve)
+    };
+};
+
+
+##
+## Private Definitions: Single-file running
+##
+
+## Makes a global environment sufficient for evaluating a single file.
+fn makeFileGlobals(loader) {
+    fn glo_loadModule(source) { return loadModule(loader, source) };
+    fn glo_thisLoader()       { return loader                     };
+
+    return @{
+        loadGlobals(loader)*,
+        loadModule: glo_loadModule,
+        thisLoader: glo_thisLoader
+    }
+};
+
+## Runs a program which has been `eval`ed. This works for both text and
+## binary programs. This calls the given `programFunc`. If it returns
+## a module that exports `main`, then this in turn calls that `main`,
+## returning whatever that does. If not, this returns whatever the original
+## function call returned (including void).
+fn runProgram(programFunc, args) {
+    def optResult = programFunc()?;
+
+    If.is { Cmp.eq(optResult, []) }
+        { return };
+
+    def result = optResult*;
+
+    If.is { result.hasName(@module) }
+        {
+            If.value { result::exports::main }
+                { main -> return? main(args*) }
+        };
+
+    return result
+};
+
+## Helper for `runFile`, which handles program text.
+fn runTextFile(path, loader, args) {
+    def globals = makeFileGlobals(loader);
+    def text = $Io0::readFileUtf8(path);
+    def tree = treeFromText(loader, text);
+    def func = $Code::eval(globals, tree);
+
+    return? runProgram(func, args)
+};
+
+## Helper for `runFile`, which handles binaries.
+fn runBinaryFile(path, loader, args) {
+    def globals = makeFileGlobals(loader);
+    def func = $Code::evalBinary(globals, path);
+
+    return? runProgram(func, args)
+};
+
+
+##
+## Exported Definitions
+##
+
+## Documented in spec.
+export fn main(libraryPath, primitiveGlobals) {
+    note("\nLoading core library `main`...");
+    def mainLoader = InternalLoader.new(libraryPath, primitiveGlobals, null);
+    def mainModule = If.or { resolveMain(mainLoader) }
+        { die("No core library `main` module found.") };
+    def mainFunction = If.or { mainModule::exports::main }
+        { die("No `main` export from core library's `main`.") };
+
+    return mainFunction(libraryPath, primitiveGlobals)
+};
+
+## Documented in spec.
+export fn run(path, loader, args*) {
+    def globals = loadGlobals(loader);
+    def mainLoader = InternalLoader.new(path, globals, loader);
+    def mainModule = If.or { resolveMain(mainLoader) }
+        { die("No `main` module found on path: ", path) };
+    def mainFunction = If.or { mainModule::exports::main }
+        { die("No `main` export from module's `main`.") };
+
+    return? mainFunction(args*)
+};
+
+## Documented in spec.
+export fn runFile(path, loader, args*) {
+    def suffix = fileNameSuffix(path);
+
+    If.is { Cmp.eq(suffix, "sam") }
+        { return? runTextFile(path, loader, args) };
+
+    If.is { Cmp.eq(suffix, "samb") }
+        { return? runBinaryFile(path, loader, args) };
+
+    die("Unknown file name suffix: ", suffix)
+};

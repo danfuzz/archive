@@ -1,0 +1,304 @@
+#!/bin/bash
+#
+# Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+# Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+# Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+
+#
+# General setup
+#
+
+# Set `progName` to the program name, `progDir` to its directory, and `baseDir`
+# to `progDir`'s directory. Follows symlinks.
+function init-prog {
+    local newp p="$0"
+
+    while newp="$(readlink "$p")"; do
+        [[ ${newp} =~ ^/ ]] && p="${newp}" || p="$(dirname "$p")/${newp}"
+    done
+
+    progName="${p##*/}"
+    progDir="$(cd "$(dirname "$p")"; /bin/pwd -P)"
+    baseDir="$(cd "${progDir}/.."; /bin/pwd -P)"
+}
+
+init-prog
+
+
+#
+# Argument parsing
+#
+
+# Build options to pass to `samex`.
+buildOpts=()
+
+# What compiler mode to use, if any.
+compilerMode=''
+
+# Whether the demo directory needs to be copied (for mutation, etc.).
+copyDemo=0
+
+# What language module to use (as an override), if any.
+language=''
+
+# Extra options to pass to `samex`.
+samexOpts=()
+
+while [[ $1 != '' ]]; do
+    opt="$1"
+    if [[ ${opt} == '--' ]]; then
+        shift
+        break
+    elif [[ ${opt} == '--help' ]]; then
+        echo "${progName} [--runtime=<name>] [--compiler=<mode>]"
+        echo '    [--build] [--clean-build] [--no-optimize]'
+        echo '    [--time | --profile]'
+        echo '    demo-name arg...'
+        exit
+    elif [[ ${opt} =~ ^--compiler=(.*) ]]; then
+        compilerMode="${BASH_REMATCH[1]}"
+        copyDemo=1
+    elif [[ ${opt} =~ ^--language=(.*) ]]; then
+        language="${BASH_REMATCH[1]}"
+        copyDemo=1
+    elif [[    ${opt} == '--build'
+            || ${opt} == '--clean-build'
+            || ${opt} == '--no-optimize' ]]; then
+        buildOpts+=("${opt}")
+    elif [[    ${opt} == '--profile' || ${opt} == '--time'
+            || ${opt} =~ ^--runtime= ]]; then
+        samexOpts+=("${opt}")
+    elif [[ ${opt} =~ ^- ]]; then
+        echo "Unknown option: ${opt}" 1>&2
+        exit 1
+    else
+        break
+    fi
+    shift
+done
+unset opt
+
+name="$1"
+shift
+
+if [[ ${name} == '' ]]; then
+    echo 'Missing demo name.' 1>&2
+fi
+
+
+#
+# Temporary directory setup
+#
+
+# The temporary directory name.
+TMP_DIR=''
+
+# Clean up the temporary directory, if it was created. This is called
+# automatically on process exit.
+function tmpCleanup {
+    if [[ ${TMP_DIR} != '' ]]; then
+        cd /
+        rm -rf "${TMP_DIR}"
+    fi
+}
+
+# Set up a temporary directory. This sets `TMP_DIR` and arranges for
+# cleanup on exit.
+function tmpSetup {
+    TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp/}${progName}-XXXXX")" || exit 1
+    trap 'tmpCleanup' EXIT TERM
+}
+
+
+#
+# Error handling
+#
+
+# Called in case of error so that the detritus (if any) can be scrutinized.
+function handleError {
+    echo ''
+    echo "########## FAILED: ${name}"
+
+    if [[ ${TMP_DIR} == '' ]]; then
+        # Nothing to save.
+        exit 1
+    fi
+
+    destDir="${baseDir}/out/demo-oof/${name}"
+    rm -rf "${destDir}"
+    mkdir -p "$(dirname "${destDir}")"
+    cp -r "${TMP_DIR}" "${destDir}"
+
+    echo '#'
+    echo '# Files left in directory:'
+    echo '#'
+    echo "# ${destDir}"
+    echo '#'
+    echo ''
+    exit 1
+}
+
+
+#
+# Main script
+#
+
+# Where to find built commands.
+binDir="${baseDir}/out/final/bin"
+
+# Find the demo directory, expanding from the given name if necessary.
+
+demoDir="${name}"
+if [[ ! ${demoDir} =~ ^/ ]]; then
+    matches=($(find "${progDir}" -type d -name "${demoDir}*"))
+    case "${#matches[@]}" in
+        (0)
+            echo "Not found: ${demoDir}" 1>&2
+            exit 1
+            ;;
+        (1)
+            : # All good.
+            ;;
+        (*)
+            echo "Multiple matches: ${demoDir}" 1>&2
+            exit 1
+            ;;
+    esac
+    demoDir="${matches[0]}"
+fi
+name="$(basename "${demoDir}")"
+
+# Ensure it's a readable directory.
+
+if [[ ! (-r ${demoDir} && -d ${demoDir}) ]]; then
+    echo "Not a readable directory: ${demoDir}" 1>&2
+    exit 1
+fi
+
+# Find the "main" file and/or "modules" directory.
+
+if [[ -d "${demoDir}/modules" ]]; then
+    # If there's a modules directory, the path to pass is the directory.
+    mainFile="."
+else
+    mainFile="$(cd "${demoDir}"; find . -maxdepth 1 -name 'main.sam*')"
+    if [[ ${mainFile} == '' ]]; then
+        echo "No main or module file for demo: ${name}" 1>&2
+        exit 1
+    fi
+fi
+
+# Build the various products, if requested.
+
+if [[ ${#buildOpts[@]} != 0 ]]; then
+    buildOpts+=("${samexOpts[@]}")
+    if [[ ${compilerMode} != '' ]]; then
+        buildOpts+=("--compiler=${compilerMode}")
+    fi
+
+    "${progDir}/build-for-demo" "${buildOpts[@]}" \
+        || exit 1
+fi
+
+# If we need to copy the demo, do so now. This creates a temporary directory
+# to hold the result. It also sets up the `${srcFiles}` variable.
+
+if (( copyDemo )); then
+    tmpSetup
+
+    tmpDemoDir="${TMP_DIR}/files"
+    cp -r "${demoDir}" "${tmpDemoDir}" || exit 1
+    demoDir="${tmpDemoDir}"
+    unset tmpDemoDir
+
+    srcFiles=($(
+        cd "${demoDir}"
+        find . -name '*.sam' -o -name '*.sam[0-9]'
+    ))
+fi
+
+# If a `--language` override was specified, edit the appropriate directive
+# into all the source files.
+
+if [[ ${language} != '' ]]; then
+    for file in "${srcFiles[@]}"; do
+        inFile="${demoDir}/${file}"
+        outFile="${inFile}.new"
+        # Expect the first non-comment non-empty line to be the directive,
+        # when present. Either replaces it or adds it, as appropriate.
+        awk -v language="${language}" '
+        BEGIN { header = 1; }
+        header && (/^ *$/ || /^##/) {
+            print;
+            next;
+        }
+        header {
+            printf("#= language %s\n", language);
+            if ($0 !~ /^#= language /) {
+                print;
+            }
+            header = 0;
+            next;
+        }
+        { print; }
+        ' "${inFile}" > "${outFile}"
+        mv "${outFile}" "${inFile}"
+    done
+fi
+
+# If we're compiling, then now's when the compiling gets done, in the
+# temporary directory.
+
+if [[ ${compilerMode} != '' ]]; then
+    echo "########## COMPILING: ${name}"
+    echo ''
+
+    cSrcDir="${TMP_DIR}/c-src"
+
+    for file in "${srcFiles[@]}"; do
+        outFile="${cSrcDir}/${file}"
+        mkdir -p "$(dirname "${outFile}")"
+        mv "${demoDir}/${file}" "${outFile}"
+    done
+
+    "${binDir}/samtoc" \
+        --in-dir="${cSrcDir}" --out-dir="${cSrcDir}" \
+        --mode="${compilerMode}" \
+        -- . \
+        || handleError
+
+    for file in "${srcFiles[@]}"; do
+        outFile="${file%.sam*}.samb"
+        cFile="${cSrcDir}/${file%.sam*}.c"
+        "${binDir}/compile-samex-addon" \
+            --output="${cSrcDir}/${outFile}" "${cFile}" \
+            || handleError
+        cp "${cSrcDir}/${outFile}" "${demoDir}/${outFile}"
+        rm -f "${demoDir}/${file}"
+    done
+
+    if [[ ${mainFile} != '.' ]]; then
+        mainFile="${file%.sam*}.samb"
+    fi
+fi
+
+# Start the runtime, cd'ed to the demo dir, passing it the main script
+# name and any other arguments passed to this script.
+
+cmd=("${binDir}/samex" "${samexOpts[@]}" "${mainFile}" "$@")
+
+cd "${demoDir}"
+
+echo ''
+echo "########## RUNNING: ${name}"
+echo '#'
+echo "# $(basename "${cmd[0]}")" "${cmd[@]:1}"
+echo '#'
+echo ''
+
+"${cmd[@]}" || handleError
+
+echo ''
+echo "########## SUCCESS: ${name}"
+echo ''

@@ -1,0 +1,117 @@
+#!/bin/bash
+#
+# Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+# Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+# Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+
+#
+# General setup
+#
+
+# Set `progName` to the program name, `progDir` to its directory, and `baseDir`
+# to `progDir`'s directory. Follows symlinks.
+function init-prog {
+    local newp p="$0"
+
+    while newp="$(readlink "$p")"; do
+        [[ ${newp} =~ ^/ ]] && p="${newp}" || p="$(dirname "$p")/${newp}"
+    done
+
+    progName="${p##*/}"
+    progDir="$(cd "$(dirname "$p")"; /bin/pwd -P)"
+    baseDir="$(cd "${progDir}/.."; /bin/pwd -P)"
+}
+
+init-prog
+
+
+#
+# Argument parsing
+#
+
+# Preferred runtime name.
+runtime=''
+
+# What to output.
+output='name'
+
+while [[ $1 != '' ]]; do
+    opt="$1"
+    if [[ ${opt} == '--' ]]; then
+        shift
+        break
+    elif [[ ${opt} == '--help' ]]; then
+        echo "${progName} [--runtime=<name>]" \
+            "[--bin | --core | --include | --name]"
+        exit
+    elif [[    ${opt} == '--bin'
+            || ${opt} == '--core'
+            || ${opt} == '--include'
+            || ${opt} == '--name' ]]; then
+        output="${opt:2}"
+    elif [[ ${opt} =~ ^--runtime=(.*) ]]; then
+        runtime="${BASH_REMATCH[1]}"
+    elif [[ ${opt} =~ ^- ]]; then
+        echo "Unknown option: ${opt}" 1>&2
+        exit 1
+    else
+        break
+    fi
+    shift
+done
+unset opt
+
+
+#
+# Main script
+#
+
+binName='samex'
+
+if [[ "${runtime}" == "" ]]; then
+    names=(samex-tot samex-naif)
+else
+    names=("samex-${runtime}")
+fi
+
+found=''
+
+for n in "${names[@]}"; do
+    candidate="${baseDir}/lib/${n}/${binName}"
+    if [[ -x "${candidate}" ]]; then
+        found="${n}"
+        break
+    fi
+done
+
+if [[ ${found} == '' ]]; then
+    echo 'No suitable binary found.' 1>&2
+    exit 1
+fi
+
+case "${output}" in
+    (bin)
+        echo "${baseDir}/lib/${found}/${binName}"
+        ;;
+    (core)
+        result="${baseDir}/include/${found}"
+        if [[ -d "${result}/modules" ]]; then
+            echo "${result}"
+        else
+            # No generated metainfo. Assume it's fully interpreted, and
+            # point at the source.
+            echo "${baseDir}/lib/${found}/corelib"
+        fi
+        ;;
+    (include)
+        echo "${baseDir}/include/${found}"
+        ;;
+    (name)
+        echo "${found}"
+        ;;
+    (*)
+        echo "Unknown output option: ${output}" 1>&2
+        exit 1
+        ;;
+esac

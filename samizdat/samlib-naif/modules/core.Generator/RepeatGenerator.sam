@@ -1,0 +1,69 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `RepeatGenerator` Class
+##
+## Payload is `{size, value}`.
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import ./NullGenerator :: nullGenerator;
+
+
+##
+## Class Definition
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class RepeatGenerator
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    class.new(size, optValue?) {
+        If.is { Cmp.perLe(size, 0) }
+            {
+                If.is { Cmp.perLt(size, 0) }
+                    { die("Invalid negative size for RepeatGenerator.") };
+                return nullGenerator
+            };
+
+        def value = If.or { optValue* } { null };
+        return this.(NEW)(@{size, value})
+    };
+
+    ## Documented in spec.
+    .collect(optFilterFunction?) {
+        ## Just use the standard implementation.
+        return Generator_stdCollect(this, optFilterFunction*)
+    };
+
+    ## Documented in spec.
+    .fetch() {
+        ## Just use the standard implementation.
+        return Generator_stdFetch(this)
+    };
+
+    ## Documented in spec.
+    .forEach(optFilterFunction?) {
+        ## Just use the standard implementation.
+        return? Generator_stdForEach(this, optFilterFunction*)
+    };
+
+    ## Documented in spec.
+    .nextValue(box) {
+        def size = this.(ACCESS)(@size);
+
+        return? If.is { Cmp.perGt(size, 0) }
+            {
+                def value = this.(ACCESS)(@value);
+                box* := value;
+                this.(NEW)(@{size: size.sub(1), value})
+            }
+    };
+};

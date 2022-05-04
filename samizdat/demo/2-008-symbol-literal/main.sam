@@ -1,0 +1,37 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Symbol literal demo
+##
+
+
+##
+## Private Definitions
+##
+
+fn msg(string) {
+    note("Got: ", $Format::source(string))
+};
+
+
+##
+## Main Tests
+##
+
+note("Symbols");
+msg(@foo);
+msg(@"foo");
+msg(@"++ blort ++");
+msg(@anon.toUnlisted());
+
+If.not { Cmp.eq(@foo, @"foo") }
+    { die("Expected same!") };
+
+def anon = @foo.toUnlisted();
+If.is { Cmp.eq(@foo, anon) }
+    { die("Expected interned and unlisted to be different!") };
+
+If.is { Cmp.eq(anon, anon.toUnlisted()) }
+    { die("Expected unlisted and unlisted to be different!") };

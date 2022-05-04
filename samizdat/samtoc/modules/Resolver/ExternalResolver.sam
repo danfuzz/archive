@@ -1,0 +1,127 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Class definition: ExternalResolver
+##
+## Payload:
+## * cache -- cache of resolved results
+## * nextResolver -- resolver to defer to when this one fails to resolve.
+## * path -- filesystem path to a directory of modules
+##
+
+import core.Io0;
+
+import Reader;
+
+import ./InternalResolver :: *;
+import ./ResolverCache :: *;
+
+
+##
+## Private Definitions
+##
+
+## Helper for `splitPaths` which does the actual splitting.
+def parPathList = {:
+    (
+        &.
+        chars = [! ":"]*
+        (":" | !.)
+
+        { $Peg::stringFromTokenList(chars) }
+    )*
+:};
+
+## Parses a colon-separated string into a list.
+fn splitPaths(paths) {
+    return $Peg::apply(parPathList, paths)
+};
+
+
+##
+## Class definition
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+## Does direct resolution on the given `source`. Only ever called when
+## `source` is known to be `external` and so *might* be found directly
+## in this resolver's directory of modules.
+fn directResolve(self, source) {
+    def data = self.(ACCESS)();
+    def name = source::name;
+    def dirPath = "\(data::path)/\(name)";
+    def infoPath = "\(dirPath).saminfo";
+
+    return? if ($Io0::fileType(infoPath) == @file) {
+        ## We found a prefab info file. Read it!
+        def info = $Reader::readEvalExpression0(infoPath);
+        @module{info}
+    } else if ($Io0::fileType(dirPath) == @directory) {
+        ## We found a source directory for a module. Make an internal resolver
+        ## for it, and use that to resolve its `main`.
+        def subResolver = InternalResolver.new(dirPath, self);
+        subResolver.resolve(@internal{name: "main"})
+    }
+};
+
+export class ExternalResolver
+        access: ACCESS,
+        new: NEW {
+    ## Makes an external resolver. As a handy convenience, if the `path`
+    ## isn't an existing directory, this just returns the given `nextResolver`.
+    ## This means you can call this function on an optional captive modules
+    ## directory and get sensible behavior.
+    class.new(path, nextResolver) {
+        if ($Io0::fileType(path) != @directory) {
+            return nextResolver
+        };
+
+        return this.(NEW)(
+            @{
+                cache: ResolverCache.new(),
+                nextResolver,
+                path
+            })
+    };
+
+    ## Makes a chain of external resolvers corresponding to the given `paths`
+    ## string. `paths` must be a colon-separated list of `modules`-style
+    ## directories.
+    class.newChain(paths, next) {
+        def pathList = splitPaths(paths);
+        var result = next;
+
+        for (one in pathList) {
+            result := this.new(one, result)
+        };
+
+        return result
+    };
+
+    .resolve(source) {
+        def data = this.(ACCESS)();
+
+        if (def found = data::cache.get(source)) {
+            ## `found` is always a list. See comment below.
+            return? found*
+        };
+
+        ## The result is always a list, so that we can cache a not-found
+        ## result as the empty list.
+        def result = (
+            source.hasName(@external)
+                & directResolve(this, source)
+                | (data::nextResolver).resolve(source)
+        )?;
+
+        ## Cache the result, so we don't bother with a search the next time.
+        data::cache[source] := result;
+
+        return? result*
+    };
+};

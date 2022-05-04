@@ -1,0 +1,71 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## List / argument interpolation demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+fn msg(args*) {
+    note("Got: ", $Format::source(args))
+};
+
+fn ten() {
+    yield 10
+};
+
+fn list5() {
+    yield [5]
+};
+
+fn yieldTest(x) {
+    yield? x*
+};
+
+fn nonlocalTest(x) {
+    return? x*
+};
+
+
+##
+## Main Tests
+##
+
+msg(["a", "b", "c"]*, ["d", "e", "f", ["g"]*]*);
+msg({[1, 2, 3]*: 6});
+msg("blort"*);
+msg({a: 10, b: "20"}*);
+msg($Range::ClosedRange.newInclusive("a", "m", 2)*);
+
+If.value { yieldTest([]) }
+    { value -> msg(value) }
+    { note("(void)") };
+
+If.value { nonlocalTest([]) }
+    { value -> msg(value) }
+    { note("(void)") };
+
+If.value { yieldTest(["blort"]) }
+    { value -> msg(value) }
+    { note("(void)") };
+
+If.value { nonlocalTest(["fizmo"]) }
+    { value -> msg(value) }
+    { note("(void)") };
+
+## The extra parens here force the interpolated expression not to be considered
+## at function argument level.
+msg((list5()*));
+
+def five = list5()*;
+msg(five);
+
+msg({blort: list5()*});

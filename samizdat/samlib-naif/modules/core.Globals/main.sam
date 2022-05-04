@@ -1,0 +1,58 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Standard global environment
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+## All the early globals. This is evaluated eagerly at load time.
+
+import ./primitives;
+
+
+##
+## Exported Definitions
+##
+
+## Documented in spec.
+export fn earlyEnvironment() {
+    return $primitives
+};
+
+## Documented in spec.
+export fn fullEnvironment() {
+    ## These `loadModule` calls are intentionally delayed (that is, done here
+    ## instead of using top-level `import`s), so that this file can be
+    ## successfully loaded before most of the module system is ready.
+
+    ## Exported as full modules.
+    def $Format      = loadModule(@external{name: "core.Format"});
+    def $Generator   = loadModule(@external{name: "core.Generator"});
+    def $Peg         = loadModule(@external{name: "core.Peg"});
+    def $Range       = loadModule(@external{name: "core.Range"});
+
+    ## Selected bindings exported.
+    def $CommandLine = loadModule(@external{name: "core.CommandLine"});
+
+    return @{
+        $primitives*,
+
+        ## Globally-exported modules.
+        $Format,
+        $Generator,
+        $Peg,
+        $Range,
+
+        ## The one higher-layer function that gets exported to the environment.
+        runCommandLine: $CommandLine::runCommandLine
+    }
+};

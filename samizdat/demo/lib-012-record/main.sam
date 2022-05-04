@@ -1,0 +1,125 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `Record` demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+## Checks an expected result.
+fn expect(name, result, func) {
+    If.value { func() }
+        { got ->
+            If.not { Cmp.eq(got, result) }
+                {
+                    note("Unexpected result: ", $Format::source(got));
+                    die("For: ", name);
+                }
+        }
+        {
+            note("Unexpected void result.");
+            die("For: ", name);
+        }
+};
+
+## Checks an expected void result.
+fn expectVoid(name, func) {
+    If.value { func() }
+        { got ->
+            note("Unexpected non-void result: ", $Format::source(got));
+            die("For: ", name)
+        }
+};
+
+## Checks an expected equality.
+fn expectEq(name, v1, v2) {
+    If.not { Cmp.eq(v1, v2) }
+        {
+            note("Unexpected: ", $Format::source(v1), " != ",
+                $Format::source(v2));
+            die("For: ", name)
+        }
+};
+
+## Checks an expected inequality.
+fn expectNe(name, v1, v2) {
+    If.not { Cmp.ne(v1, v2) }
+        {
+            note("Unexpected: ", $Format::source(v1), " == ",
+                $Format::source(v2));
+            die("For: ", name)
+        }
+};
+
+
+##
+## Main demos
+##
+
+note("Records");
+
+expectEq("eq 1", @eek{x: 10}, @(@eek){x: 10});
+expectEq("eq 2", @eek{x: 10}, @eek{x: (5).add(5)});
+expectEq("eq 3", @eek{x: 10}, @(Class.typeCast(Symbol, "eek")){x: 10});
+
+expectNe("ne 1", @x{}, @x{a: 1});
+expectNe("ne 2", @x{a: 1}, @x{a: 2});
+expectNe("ne 3", @x{a: 1}, @y{a: 1});
+
+expectEq("get_name", @blort, @blort{}.get_name());
+
+expectEq("get_data", @{a: 1}, @blort{a: 1}.get_data());
+
+expectEq("cat 1",
+    @foo{a: 1},
+    @foo{a: 1}.cat());
+expectEq("cat 2",
+    @foo{a: 1, b: 2},
+    @foo{b: 2}.cat(@bar{a: 1}));
+expectEq("cat 3",
+    @foo{a: 1, b: 2, c: 3},
+    @foo{b: 2}.cat(@bar{a: 1}, @{c: 3}));
+
+expectEq("del 1",  @a{},           @a{}.del());
+expectEq("del 2",  @b{a: 1},       @b{a: 1}.del());
+expectEq("del 3",  @c{a: 1},       @c{a: 1}.del(@b));
+expectEq("del 4",  @d{},           @d{a: 1}.del(@a));
+expectEq("del 5",  @e{a: 1},       @e{a: 1, b: 2}.del(@b));
+expectEq("del 6",  @f{b: 2},       @f{a: 1, b: 2}.del(@a));
+expectEq("del 7",  @g{a: 1, b: 2}, @g{a: 1, b: 2}.del(@x));
+expectEq("del 8",  @h{},           @h{a: 1, b: 2}.del(@a, @b));
+expectEq("del 9",  @i{b: 2},       @i{a: 1, b: 2, c: 3}.del(@a, @c));
+expectEq("del 10", @j{b: 2, d: 4}, @j{a: 1, b: 2, c: 3, d: 4}.del(@a, @c));
+expectEq("del 11", @k{b: 2},       @k{a: 1, b: 2, c: 3, d: 4}.del(@a, @c, @d));
+
+expectEq("castToward",
+    @{name: "fizmo"},
+    @potion{name: "fizmo"}.castToward(SymbolTable));
+
+## Construction.
+expectEq("new 1", @foo,     Record.new(@foo).get_name());
+expectEq("new 2", @foo,     Record.new(@foo, @{a: 10}).get_name());
+expectEq("new 3", @{},      Record.new(@foo).get_data());
+expectEq("new 4", @{a: 10}, Record.new(@foo, @{a: 10}).get_data());
+expectEq("new 5", @{a: 10}, Record.new(@foo, @blort{a: 10}).get_data());
+
+## Construction using interpolation.
+expectEq("interpolate 1",
+    @foo{x: 1},
+    @foo{@{x: 1}*});
+expectEq("interpolate 2",
+    @foo{x: 1},
+    @foo{@blort{x: 1}*});
+expectEq("interpolate 3",
+    @foo{x: 1, y: 2, z: 3},
+    @foo{x: 1, @blort{y: 2, z: 3}*});
+
+note("All good.");

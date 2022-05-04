@@ -1,0 +1,110 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+import core.LangNode :: *;
+
+import VarCalc :: get_varRefs;
+
+
+##
+## Private Definitions
+##
+
+## Does one layer of literal interning.
+fn lits(node, interner) {
+    return switch (def nodeName = node.name) {
+        @apply: {
+            def target = lits(node::target, interner);
+            def name = lits(node::name, interner);
+            def values = lits(node::values, interner);
+
+            @apply{target, name, values}
+        };
+
+        @call: {
+            def target = lits(node::target, interner);
+            def name = lits(node::name, interner);
+            def values = [ a in node::values -> lits(a, interner) ];
+
+            @call{target, name, values}
+        };
+
+        @closure: {
+            def name = (def value = node::name)
+                & @{name: lits(@literal{value}, interner)}
+                | @{};
+
+            makeFullClosure(@{
+                name*,
+                formals: node::formals,
+                statements: [ s in node::statements -> lits(s, interner) ],
+                yield: lits(node::yield, interner),
+                ((def yieldDef = node::yieldDef) & @{yieldDef} | @{})*
+            })
+        };
+
+        @fetch: {
+            def target = lits(node::target, interner);
+            @fetch{target}
+        };
+
+        @importResource: {
+            def source = lits(node::source, interner);
+            def format = interner.intern(node::format);
+            @importResource{node*, source, format}
+        };
+
+        @literal: {
+            @literalRef{id: interner.intern(node::value)}
+        };
+
+        @store: {
+            def target = lits(node::target, interner);
+            def value = lits(node::value, interner);
+            @store{target, value}
+        };
+
+        ## Used as the `source` in `import*` nodes.
+        @external:
+        @internal: {
+            @(nodeName){name: interner.intern(node::name)}
+        };
+
+        @importModule:
+        @importModuleSelection: {
+            def source = lits(node::source, interner);
+            @(nodeName){node*, source}
+        };
+
+        @varDef: {
+            @varDef{node*, value: lits(node::value, interner)}
+        };
+
+        @export:
+        @maybe:
+        @noYield: {
+            def value = lits(node::value, interner);
+            @(nodeName){value}
+        };
+
+        @exportSelection:
+        @varRef:
+        @void: {
+            node
+        };
+    }
+};
+
+
+
+##
+## Exported Definitions
+##
+
+## Interns all literal nodes at or under the given `node`, into the given
+## `interner`. Returns a replacement for the original `node` argument, in
+## which literals have been replaced by indexed references to same.
+export fn internLiterals(node, interner) {
+    return lits(node, interner)
+};

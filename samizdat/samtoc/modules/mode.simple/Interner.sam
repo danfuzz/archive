@@ -1,0 +1,50 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+
+##
+## Class definition: Interner
+##
+## Payload:
+## * box -- box for map of value->intern-result bindings
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class Interner
+        access: ACCESS,
+        new: NEW {
+    class.new() {
+        var values = {};
+        return this.(NEW)(@{box: values?})
+    };
+
+    .intern(value) {
+        def box = this.(ACCESS)(@box);
+        def values = box*;
+
+        if (def already = values[value]) {
+            return already;
+        };
+
+        def result = #values;
+
+        box* := {values*, (value): result};
+        return result
+    };
+
+    .get_interns() {
+        def box = this.(ACCESS)(@box);
+        def values = box*;
+        def boxList = [ n in (0..#values) -> def result; result? ];
+
+        for (mapping in values) {
+            boxList[mapping.value]* := mapping.key
+        };
+
+        return [ b in boxList -> b* ]
+    };
+};

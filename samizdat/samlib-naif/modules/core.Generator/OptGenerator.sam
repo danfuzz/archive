@@ -1,0 +1,62 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `OptGenerator` Class
+##
+## Payload is `{generator}`, the sub-generator.
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import ./ValueGenerator :: *;
+import ./unbounded :: unboundedCollect, unboundedFetch;
+
+
+##
+## Class Definition
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class OptGenerator
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    class.new(generator) {
+        return this.(NEW)(@{generator})
+    };
+
+    ## Documented in spec.
+    .collect(optFilterFunction?) {
+        ## It is an "unbounded collect" error to call this.
+        unboundedCollect(this)
+    };
+
+    ## Documented in spec.
+    .fetch() {
+        ## It is an "unbounded fetch" error to call this.
+        unboundedFetch(this)
+    };
+
+    ## Documented in spec.
+    .forEach(optFilterFunction?) {
+        ## It is an "unbounded forEach" error to call this.
+        unboundedForEach(this)
+    };
+
+    ## Documented in spec.
+    .nextValue(box) {
+        def result;
+
+        return If.value { this.(ACCESS)(@generator).nextValue(result?) }
+            { nextGenerator ->
+                box* := [result];
+                this.(NEW)(@{generator: nextGenerator})
+            }
+            { ValueGenerator.new([]).nextValue(box) }
+    };
+};

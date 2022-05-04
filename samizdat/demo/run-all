@@ -1,0 +1,131 @@
+#!/bin/bash
+#
+# Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+# Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+# Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+
+#
+# General setup
+#
+
+# Set `progName` to the program name, `progDir` to its directory, and `baseDir`
+# to `progDir`'s directory. Follows symlinks.
+function init-prog {
+    local newp p="$0"
+
+    while newp="$(readlink "$p")"; do
+        [[ ${newp} =~ ^/ ]] && p="${newp}" || p="$(dirname "$p")/${newp}"
+    done
+
+    progName="${p##*/}"
+    progDir="$(cd "$(dirname "$p")"; /bin/pwd -P)"
+    baseDir="$(cd "${progDir}/.."; /bin/pwd -P)"
+}
+
+init-prog
+
+
+#
+# Argument parsing
+#
+
+# Build options.
+buildOpts=()
+
+# Runtime / compiler selection options.
+runtimeOpts=()
+
+# Whether to time the run.
+timeRun=0
+
+while [[ $1 != '' ]]; do
+    opt="$1"
+    if [[ ${opt} == '--' ]]; then
+        shift
+        break
+    elif [[ ${opt} == '--help' ]]; then
+        echo "${progName} [--runtime=<name>] [--compiler=<mode>]"
+        echo '    [--build] [--clean-build] [--no-optimize] [--time]'
+        exit
+    elif [[    ${opt} == '--build'
+            || ${opt} == '--clean-build'
+            || ${opt} == '--no-optimize' ]]; then
+        buildOpts+=("${opt}")
+    elif [[ ${opt} == '--time' ]]; then
+        timeRun=1
+    elif [[ ${opt} =~ ^--runtime= || ${opt} =~ ^--compiler= ]]; then
+        runtimeOpts+=("${opt}")
+    elif [[ ${opt} =~ ^- ]]; then
+        echo "Unknown option: ${opt}" 1>&2
+        exit 1
+    else
+        break
+    fi
+    shift
+done
+unset opt
+
+
+#
+# Main script
+#
+
+# Start timing, if asked.
+
+if (( timeRun )); then
+    startTime="$(date '+%s')"
+fi
+
+# Build the various products, if requested.
+
+if [[ ${#buildOpts[@]} != 0 ]]; then
+    buildOpts+=("${runtimeOpts[@]}")
+    if [[ ${compilerMode} != '' ]]; then
+        buildOpts+=("--compiler=${compilerMode}")
+    fi
+
+    "${progDir}/build-for-demo" "${buildOpts[@]}" \
+        || exit 1
+fi
+
+# Find all the demo directories.
+
+allNames=($(
+    find "${progDir}" -mindepth 1 -maxdepth 1 -type d -exec basename '{}' ';'
+))
+
+# Run each demo.
+
+errorNames=()
+for name in "${allNames[@]}"; do
+    echo ''
+    "${progDir}/run" "${runtimeOpts[@]}" "${name}"
+    error="$?"
+    if [[ ${error} != 0 ]]; then
+        echo "Exited with error code: ${error}"
+        errorNames+=("${name}")
+    fi
+done
+
+# Produce the final report.
+
+echo ''
+
+if [[ ${#errorNames[@]} == 0 ]]; then
+    echo 'All good!'
+else
+    echo 'Errors reported from:'
+    for name in "${errorNames[@]}"; do
+        echo "    ${name}"
+    done
+fi
+
+if (( timeRun )); then
+    endTime="$(date '+%s')"
+    (( totalSecs = endTime - startTime ))
+    (( totalMins = totalSecs / 60 ))
+    (( totalSecs = totalSecs - totalMins * 60 ))
+    echo ''
+    printf 'Elapsed time: %dm %02ds\n' "${totalMins}" "${totalSecs}"
+fi

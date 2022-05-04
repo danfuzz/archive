@@ -1,0 +1,57 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+import core.LangNode :: makeDynamicImport;
+
+
+##
+## Private Definitions
+##
+
+## Extracts and combines the `varDefs` of all the arguments.
+fn catVarDefs(nodes*) {
+    return [].cat([ n in nodes -> get_varDefs(n) ]*)
+};
+
+
+##
+## Exported Definitions
+##
+
+## Returns list of variable names newly-defined by `node`. Result may have
+## duplicates.
+export fn get_varDefs(node) {
+    return switch (node.name) {
+        @export: {
+            get_varDefs(node::value)
+        };
+
+        @importModuleSelection: {
+            def statements = makeDynamicImport(node);
+            catVarDefs(statements*)
+        };
+
+        @importModule:
+        @importResource:
+        @varDef: {
+            [node::name]
+        };
+
+        @apply:
+        @call:
+        @closure:
+        @exportSelection:
+        @fetch:
+        @literal:
+        @literalRef:
+        @maybe:
+        @noYield:
+        @store:
+        @varRef:
+        @void: {
+            []
+        }
+    }
+};
+

@@ -1,0 +1,62 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Generator functions
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+export import ./FilterGenerator :: *;
+export import ./ListWrapGenerator :: *;
+export import ./NullGenerator :: *;
+export import ./OptGenerator :: *;
+export import ./ParaGenerator :: *;
+export import ./RepeatGenerator :: *;
+export import ./SerialGenerator :: *;
+export import ./ValueGenerator :: *;
+export import ./unbounded :: *;
+
+
+##
+## Exported Definitions
+##
+
+## Re-exported from builtins. Documented in spec.
+export def stdCollect = Generator_stdCollect;
+
+## Re-exported from builtins. Documented in spec.
+export def stdFetch = Generator_stdFetch;
+
+## Re-exported from builtins. Documented in spec.
+export def stdForEach = Generator_stdForEach;
+
+## Documented in spec.
+export fn collectAll(filterFunction, generators*) {
+    return If.is { Cmp.eq(generators.get_size(), 1) }
+        {
+            ## We are collecting a single generator, so just use `.collect()`
+            ## directly.
+            (generators*).collect(filterFunction)
+        }
+        {
+            ## The general case.
+            FilterGenerator.new(filterFunction, generators*).collect()
+        }
+};
+
+## Documented in spec.
+export fn forEachAll(filterFunction, generators*) {
+    return? If.is { Cmp.eq(generators.get_size(), 1) }
+        {
+            ## We are iterating a single generator, so just use `.forEach()`
+            ## directly.
+            (generators*).forEach(filterFunction)
+        }
+        {
+            ## The general case.
+            FilterGenerator.new(filterFunction, generators*).forEach()
+        }
+};

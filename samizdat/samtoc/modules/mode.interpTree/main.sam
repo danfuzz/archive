@@ -1,0 +1,37 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Compilation mode "interp-tree" which converts the source into a parse tree,
+## and emits C code to recreate same. When run, this uses the underlying
+## interpreter (hence the name's prefix).
+##
+
+import core.Io0;
+
+import DataCode;
+import Reader;
+import Template;
+
+import @utf8 ./template.txt;
+
+
+##
+## Exported Definitions
+##
+
+## Compiles a single file.
+export fn compile(resolver, sourcePath, targetPath) {
+    fn resolveFn(source) {
+        return resolver.resolve(source)
+    };
+
+    def tree = $Reader::readProgram(sourcePath, resolveFn);
+    def source = $DataCode::convert(tree).indent(2, 78);
+    def outputText = $Template::apply($template, {source});
+
+    $Io0::writeFileUtf8(targetPath, outputText)
+};
+
+export def SUFFIX = "c";

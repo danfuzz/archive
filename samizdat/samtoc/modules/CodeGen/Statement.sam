@@ -1,0 +1,43 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Statement tree.
+##
+
+import ./CodeString :: *;
+import ./Wrapper :: *;
+
+
+##
+## Class Definition
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class Statement
+        access: ACCESS,
+        new: NEW {
+    class.new(tree) {
+        return Wrapper.new(this.(NEW)(@{tree: CodeString.fix(tree)}))
+    };
+
+    .flatten() {
+        def tree = this.(ACCESS)(@tree);
+        return "\(tree.flatten());"
+    };
+
+    .indent(level, maxColumns) {
+        def tree = this.(ACCESS)(@tree);
+        return "\(tree.indent(level, maxColumns));\n"
+    };
+
+    .prefersFlat() {
+        def tree = this.(ACCESS)(@tree);
+        return? tree.prefersFlat()
+            & this
+    };
+};

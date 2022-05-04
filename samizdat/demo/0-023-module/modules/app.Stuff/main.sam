@@ -1,0 +1,35 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+## An "internal" module, imported whole.
+import ./substuff;
+
+## An "internal" module, wildcard import. This ends up defining `MORE_STUFF1`
+## and `MORE_STUFF2`.
+import ./moreStuff :: *;
+
+## Same as above, except with prefixes.
+import stu_* = ./moreStuff :: *;
+
+## An "internal" module, re-exported.
+export import ./reexport;
+
+## An "internal" module, with re-exported bindings.
+export import ./reexportSelect :: reBind1, reBind2;
+
+## Multiple variable export.
+def STUFF = "stuff";
+def SUBSTUFF = $substuff::SUBSTUFF;
+export STUFF, SUBSTUFF;
+
+export fn stuffFunc1() {
+    return "Funky stuff 1: ".cat(MORE_STUFF1, " ", MORE_STUFF2)
+};
+
+export fn stuffFunc2() {
+    return "Funky stuff 2: ".cat(stu_MORE_STUFF1, " ", stu_MORE_STUFF2)
+};

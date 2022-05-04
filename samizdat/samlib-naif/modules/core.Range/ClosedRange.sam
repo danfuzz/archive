@@ -1,0 +1,123 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `ClosedRange` Class
+##
+## Payload:
+##   converter: function
+##   increment: int
+##   value:     intOrChar
+##   size:      int
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import core.Generator :: stdCollect, stdFetch, stdForEach;
+
+import ./converter :: converterFor;
+
+
+##
+## Class Definition
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class ClosedRange
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    class.new(firstValue, size, optIncrement?) {
+        def increment = If.or { optIncrement* } { 1 };
+        def converter = converterFor(Class.of(firstValue));
+        def value = Class.typeCast(Int, firstValue);
+
+        If.not { Int.accepts(size) }
+            { die("`size` must be an int.") };
+
+        def nonnegSize = If.or { Cmp.ge(size, 0) } { 0 };
+
+        return this.(NEW)(@{converter, increment, value, size: nonnegSize})
+    };
+
+    ## Documented in spec.
+    class.newExclusive(firstValue, limit, optIncrement?) {
+        ## `crossEq` ensures that `firstValue` and `limit` have the same class.
+        def isEmpty = firstValue.crossEq(limit)?;
+        def firstInt = Class.typeCast(Int, firstValue);
+        def limitInt = Class.typeCast(Int, limit);
+        def increment = If.or { optIncrement* } { 1 };
+
+        ## `crossEq` ensures that `increment` is an int.
+        If.is { increment.crossEq(0) }
+            {
+                return If.is { isEmpty* }
+                    { this.new(0, 0, 0) }
+                    { this.new(firstValue, 1, 0) }
+            };
+
+        ## `increment.sign()` is either `-1` or `+1`, which when subtracted
+        ## from limit "pushes" the limit in the right direction to make the
+        ## truncated division produce the correct result size.
+        def size =
+            limitInt.sub(firstInt).sub(increment.sign()).div(increment).add(1);
+
+        return this.new(firstValue, size, increment);
+    };
+
+    ## Documented in spec.
+    class.newInclusive(firstValue, limit, optIncrement?) {
+        def increment = If.or { optIncrement* } { 1 };
+
+        ## This just ensures that `firstValue` and `limit` have the same class.
+        firstValue.crossEq(limit);
+
+        ## `crossEq` ensures that `increment` is an int.
+        If.is { increment.crossEq(0) }
+            { return this.new(firstValue, 1, 0) };
+
+        def firstInt = Class.typeCast(Int, firstValue);
+        def limitInt = Class.typeCast(Int, limit);
+        def size = limitInt.sub(firstInt).div(increment).add(1);
+
+        return this.new(firstValue, size, increment);
+    };
+
+    ## Documented in spec.
+    .collect(optFilterFunction?) {
+        ## Just use the standard implementation.
+        return stdCollect(this, optFilterFunction*)
+    };
+
+    ## Documented in spec.
+    .fetch() {
+        ## Just use the standard implementation.
+        return stdFetch(this)
+    };
+
+    ## Documented in spec.
+    .forEach(optFilterFunction?) {
+        ## Just use the standard implementation.
+        return? stdForEach(this, optFilterFunction*)
+    };
+
+    ## Documented in spec.
+    .nextValue(box) {
+        def size = this.(ACCESS)(@size);
+
+        return? If.not { size.crossEq(0) }
+            {
+                def value = this.(ACCESS)(@value);
+                box* := this.(ACCESS)(@converter)(value);
+                return this.(NEW)(@{
+                    this.(ACCESS)()*,
+                    value: value.add(this.(ACCESS)(@increment)),
+                    size:  size.sub(1)
+                });
+            }
+    };
+};

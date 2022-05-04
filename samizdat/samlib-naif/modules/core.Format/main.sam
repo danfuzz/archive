@@ -1,0 +1,75 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Value stringification
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import ./humanString :: humanString;
+import ./int :: intWithBase;
+import ./sourceGeneral :: sourceGeneral;
+
+
+##
+## Exported Definitions
+##
+
+## Documented in spec.
+export fn int(value, optBase?) {
+    def base = If.or { optBase* } { 10 };
+
+    If.is { Cmp.lt(base, 2) }
+        { die("Invalid base for int.") };
+
+    If.is { Cmp.gt(base, 36) }
+        { die("Invalid base for int.") };
+
+    return intWithBase(value, base)
+};
+
+## Documented in spec.
+export fn intHex(arg) {
+    return intWithBase(arg, 16)
+};
+
+## Documented in spec.
+export fn source(value?) {
+    return If.value { value* }
+        { value -> sourceGeneral(value, true) }
+        { "void" }
+};
+
+## Documented in spec.
+export fn sourceUnadorned(value?) {
+    return If.value { value* }
+        { value -> sourceGeneral(value, false) }
+        { "void" }
+};
+
+## Documented in spec.
+export fn usual(value?) {
+    return If.value { value* }
+        { value -> humanString(value) }
+        { "" }
+};
+
+## Mapping from format escape characters to their respective handler functions.
+def FORMATTERS = {
+    q: source,
+    Q: sourceUnadorned,
+    s: usual,
+    x: intHex
+};
+
+## Documented in spec.
+##
+## This is listed out of (alphabetical) order, as it uses `FORMATTERS`, which
+## is defined in terms of other exported functions.
+export fn formatterFor(formatSpec) {
+    return If.or { FORMATTERS.get(Class.typeCast(Symbol, formatSpec)) }
+        { die("Unrecognized format spec: ", source(formatSpec)) }
+};

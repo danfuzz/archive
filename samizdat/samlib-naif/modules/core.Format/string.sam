@@ -1,0 +1,65 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## String utilities
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import core.Range :: ClosedRange;
+
+import ./int :: intWithBase;
+
+
+## The first Unicode surrogate code point.
+def CHAR_SURROGATE_START = Class.typeCast(String, 55296);  ## U+D800
+
+## The last Unicode surrogate code point.
+def CHAR_SURROGATE_END = Class.typeCast(String, 57343);    ## U+DFFF
+
+## The last Unicode code point.
+def CHAR_UNICODE_END = Class.typeCast(String, 1114111);   ## U+10FFFF
+
+## Map of special-case characters to either their stringified forms or
+## to `"x"` to indicate a need to convert as hex.
+def SPECIAL_CHARS = {
+    (ClosedRange.newInclusive(Class.typeCast(String, 1), Class.typeCast(String, 31)))*: "x",
+    (ClosedRange.newInclusive(Class.typeCast(String, 127), Class.typeCast(String, 159)))*: "x",
+    Class.typeCast(String, 65534): "x",
+    Class.typeCast(String, 65535): "x",
+    "\0": "\\0",
+    "\n": "\\n",
+    "\r": "\\r",
+    "\t": "\\t",
+    "\"": "\\\"",
+    "\\": "\\\\"
+};
+
+## Does hex character conversion.
+fn hexStringChar(ch) {
+    return "\\x".cat(intWithBase(Class.typeCast(Int, ch), 16), ";")
+};
+
+## Helper for stringifying strings: Returns the converted form of the
+## given character.
+export fn stringChar(ch) {
+    If.value { SPECIAL_CHARS.get(ch) }
+        { special ->
+            If.is { Cmp.eq(special, "x") }
+                { return hexStringChar(ch) }
+                { return special }
+        };
+
+    If.is { Cmp.lt(ch, CHAR_SURROGATE_START) }
+        { return ch };
+
+    If.is { Cmp.le(ch, CHAR_SURROGATE_END) }
+        { return hexStringChar(ch) };
+
+    return If.is { Cmp.le(ch, CHAR_UNICODE_END) }
+        { ch }
+        { hexStringChar(ch) }
+};

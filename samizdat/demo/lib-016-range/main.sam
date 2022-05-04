@@ -1,0 +1,131 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Generator function demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import core.Generator :: *;
+
+
+##
+## Private Definitions
+##
+
+## Prints the given value, indented slightly.
+fn msg(value) {
+    note("  ", $Format::source(value))
+};
+
+## Outputs all generated values, with a header and a footer.
+fn msgAll(header, gen) {
+    note(header);
+    collectAll([gen*]) { elem -> msg(elem) };
+    note("  [fin]");
+    note("  value: ", $Format::source(gen));
+    note()
+};
+
+## Outputs ten generated values, with a header and a footer.
+fn msgTen(header, origGen) {
+    note(header);
+
+    var count = 10;
+    var gen = origGen;
+
+    If.loopUntil { /out ->
+        count := count.sub(1);
+        If.is { Cmp.lt(count, 0) }
+            { yield /out [] };
+
+        def result;
+        If.value { gen.nextValue(result?) }
+            { nextGen ->
+                msg(result);
+                gen := nextGen
+            }
+            { yield /out [] }
+    };
+
+    note("  [...]");
+    note("  value: ", $Format::source(origGen));
+    note()
+};
+
+
+##
+## Main Tests
+##
+
+msgTen("Open range (10)",
+    $Range::OpenRange.new(10));
+
+msgTen("Open range (100, 5)",
+    $Range::OpenRange.new(100, 5));
+
+msgTen("Open range (\"z\", -2)",
+    $Range::OpenRange.new("z", -2));
+
+msgTen("Open range (333, 0)",
+    $Range::OpenRange.new(333, 0));
+
+msgTen("Open range (\"!\", 0)",
+    $Range::OpenRange.new("!", 0));
+
+note();
+
+msgAll("Closed range (100, 7)",
+    $Range::ClosedRange.new(100, 7));
+
+msgAll("Closed range (3, 5, 10)",
+    $Range::ClosedRange.new(3, 5, 10));
+
+msgAll("Closed range (3, 0, 10)",
+    $Range::ClosedRange.new(3, 0, 10));
+
+msgAll("Closed range (\"9\", 10, -1)",
+    $Range::ClosedRange.new("9", 10, -1));
+
+note();
+
+msgAll("Inclusive range (5..10)",
+    $Range::ClosedRange.newInclusive(5, 10));
+
+msgAll("Inclusive range (10..1 by -2)",
+    $Range::ClosedRange.newInclusive(10, 1, -2));
+
+msgAll("Inclusive range (\"a\"..\"z\" by 5)",
+    $Range::ClosedRange.newInclusive("a", "z", 5));
+
+msgAll("Zero-increment inclusive int range",
+    $Range::ClosedRange.newInclusive(10, 20, 0));
+
+msgAll("Zero-increment inclusive character range",
+    $Range::ClosedRange.newInclusive("x", "a", 0));
+
+msgAll("Empty inclusive range",
+    $Range::ClosedRange.newInclusive(10, 9, 1));
+
+note();
+
+msgAll("Exclusive range (5..!10)",
+    $Range::ClosedRange.newExclusive(5, 10));
+
+msgAll("Exclusive range (10..!1 by -2)",
+    $Range::ClosedRange.newExclusive(10, 1, -2));
+
+msgAll("Exclusive range (\"a\"..!\"z\" by 5)",
+    $Range::ClosedRange.newExclusive("a", "z", 5));
+
+msgAll("Zero-increment exclusive int range",
+    $Range::ClosedRange.newExclusive(10, 20, 0));
+
+msgAll("Zero-increment exclusive character range",
+    $Range::ClosedRange.newExclusive("x", "a", 0));
+
+msgAll("Empty exclusive range",
+    $Range::ClosedRange.newExclusive(10, 9, 1));

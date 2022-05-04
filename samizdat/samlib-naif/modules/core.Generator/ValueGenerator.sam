@@ -1,0 +1,55 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `ValueGenerator` Class
+##
+## Payload is `{value}`, the value.
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import ./unbounded :: unboundedCollect, unboundedFetch;
+
+
+##
+## Class Definition
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class ValueGenerator
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    class.new(value) {
+        return this.(NEW)(@{value})
+    };
+
+    ## Documented in spec.
+    .collect(optFilterFunction?) {
+        ## It is an "unbounded collect" error to call this.
+        unboundedCollect(this)
+    };
+
+    ## Documented in spec.
+    .fetch() {
+        ## It is an "unbounded fetch" error to call this.
+        unboundedFetch(this)
+    };
+
+    ## Documented in spec.
+    .forEach(optFilterFunction?) {
+        ## It is an "unbounded forEach" error to call this.
+        unboundedForEach(this)
+    };
+
+    ## Documented in spec.
+    .nextValue(box) {
+        box* := this.(ACCESS)(@value);
+        return this
+    };
+};

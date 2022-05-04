@@ -1,0 +1,108 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Path string utilities
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+## Does a type / content check on `path`.
+fn checkPath(path) {
+    If.not { String.accepts(path) }
+        { die("Invalid non-string path.") };
+    If.is { Cmp.eq(path, "") }
+        { die("Invalid empty path.") };
+};
+
+
+##
+## Exported Definitions
+##
+
+## Documented in spec.
+export fn fixPath(path, basePaths*) {
+    checkPath(path);
+
+    return If.or
+        { If.is { Cmp.eq(path.get(0), "/") } { path } }
+        { If.is { Cmp.eq(basePaths, []) } { path } }
+        { fixPath(basePaths*).cat("/", path) }
+};
+
+## Documented in spec.
+export fn get_directory(path) {
+    checkPath(path);
+
+    var at = path.get_size();
+
+    ## Back up over any path-final slashes. If we hit the start of the path,
+    ## then that means the path was all slashes, making the result be `"/"`.
+    If.loopUntil { /out ->
+        at := at.sub(1);
+
+        def ch = path.get(at);
+        If.is { Cmp.ne(ch, "/") } { yield /out [] };
+        If.is { Cmp.eq(at, 0) } { return "/" };
+    };
+
+    ## Back up until the next-final slash. If we hit the start of the path,
+    ## then that means there was no slash, making the result be `"."`. If
+    ## the next-final slash is at the start of the path, then the result is
+    ## `"/"`.
+    return If.loopUntil {
+        If.is { Cmp.eq(at, 0) } { return "." };
+        at := at.sub(1);
+
+        def ch = path.get(at);
+        If.is { Cmp.eq(ch, "/") }
+            {
+                If.is { Cmp.eq(at, 0) }
+                    { "/" }
+                    { path.sliceExclusive(0, at) }
+            };
+    }
+};
+
+## Documented in spec.
+export fn get_file(path) {
+    checkPath(path);
+
+    var at = path.get_size();
+
+    ## Back up over any path-final slashes. If we hit the start of the path,
+    ## then that means the path was all slashes, making the result be `"/"`.
+    If.loopUntil { /out ->
+        at := at.sub(1);
+
+        def ch = path.get(at);
+        If.is { Cmp.ne(ch, "/") } { yield /out [] };
+        If.is { Cmp.eq(at, 0) } { return "/" };
+    };
+
+    def endAt = at;  ## The index of the final character of the result.
+
+    ## Back up until the next-final slash. If we hit the start of the path,
+    ## then that means there was no slash, making the result be the entire
+    ## `path` minus any path-final slashes.
+    If.loop {
+        If.is { Cmp.eq(at, 0) }
+            { return path.sliceInclusive(0, endAt) };
+
+        at := at.sub(1);
+
+        def ch = path.get(at);
+        If.is { Cmp.eq(ch, "/") }
+            {
+                at := at.add(1);
+                return path.sliceInclusive(at, endAt)
+            };
+    }
+};

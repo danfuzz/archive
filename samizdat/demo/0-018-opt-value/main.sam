@@ -1,0 +1,36 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Optional-value operator demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+fn msg(value) {
+    note("Got: ", $Format::source(value))
+};
+
+fn getVoid() {
+    ## This space intentionally left blank.
+};
+
+fn getValue(x) {
+    yield x
+};
+
+
+##
+## Main Tests
+##
+
+msg(getVoid()?);
+msg(getValue("yay")?);
+msg("stuff"?);

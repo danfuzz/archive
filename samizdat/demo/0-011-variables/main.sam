@@ -1,0 +1,141 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Variable declaration and binding demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+## Demo of immutable variable declaration and binding.
+fn frotz(foo) {
+    def ignatz;
+
+    note("frotz:");
+    ignatz := "    ".cat(foo);
+    note(ignatz)
+};
+
+## Demo of same-scope mutable variable declaration and binding.
+fn zorch(foo) {
+    var ignatz;
+    var fizmo = foo;
+
+    note("zorch:");
+    ignatz := "    ".cat(fizmo);
+    note(ignatz);
+    ignatz := ignatz.cat(" and ");
+    fizmo := ignatz.cat("trolb");
+    note(fizmo)
+};
+
+## Demo of different-scope mutable variable declaration and binding.
+fn igram(foo) {
+    var fizmo = foo;
+
+    note("igram:");
+
+    If.is { Cmp.eq(fizmo, "fizmo") }
+        { fizmo := "Yes, fizmo." };
+
+    note("    ", fizmo);
+    fizmo := foo;
+
+    If.is { Cmp.eq(fizmo, "fizmo") }
+        {
+            If.is { Cmp.eq(fizmo, "fizmo") }
+                { fizmo := "Yes yes, fizmo." }
+        };
+
+    note("    ", fizmo);
+};
+
+## Demo of lazy variables.
+fn glorf() {
+    note("glorf:");
+
+    var x = 0;
+    def foo { x := x.add(1) };
+
+    If.not { Cmp.eq(x, 0) }
+        { die("Bad lazy 1.") };
+
+    def y = foo;
+
+    If.not { Cmp.eq(x, 1) }
+        { die("Bad lazy 2.") };
+    If.not { Cmp.eq(y, 1) }
+        { die("Bad lazy 3.") };
+    If.not { Cmp.eq(foo, 1) }
+        { die("Bad lazy 4.") };
+    If.not { Cmp.eq(x, 1) }
+        { die("Bad lazy 5.") };
+
+    note("    Yes!");
+};
+
+## Demo of box-of-variable access.
+fn fizmo() {
+    var x = "blort";
+    def box = x?;
+
+    ## Fetching through the box.
+    note("fizmo:");
+    note("    ", x);
+    note("    ", box.fetch());
+    note("    ", box*);
+
+    ## Storing to the original variable affects the box too.
+    x := "frotz";
+    note("    ", x);
+    note("    ", box.fetch());
+    note("    ", box*);
+
+    ## Storing to the box affects the original variable too.
+    box* := "igram";
+    note("    ", x);
+    note("    ", box.fetch());
+    note("    ", box*);
+
+    ## The `?` operator works as part of the left-hand side of an assignment.
+    (x?)* := "blort";
+    note("    ", x);
+    note("    ", box.fetch());
+    note("    ", box*);
+
+    ## In this case, the variable is unbound, and the usual idiom of `name?*`
+    ## should expand into a successful interpolation of nothingness.
+    var y;
+    note("    nothing? [", y?*, "]");
+};
+
+
+##
+## Main Tests
+##
+
+## Check a few cases of identifier syntax.
+def _ = 1;
+def $ = 1;
+def x = 1;
+def _x = 1;
+def $x = 1;
+def x_ = 1;
+def x$ = 1;
+def x1 = 1;
+def _1 = 1;
+def $1 = 1;
+def \"weird name" = 1;
+
+frotz("fizmo");
+zorch("blort");
+igram("fizmo");
+glorf();
+fizmo();

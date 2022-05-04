@@ -1,0 +1,66 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import ./constructors1 :: makeGet, makeVarFetch;
+import ./literals :: SYMS, makeLiteral;
+
+
+##
+## Private Definitions
+##
+
+## Global variable names / regular variable references.
+def NAMES = [
+    @break,
+    @continue,
+    @loadModule,
+    @loadResource,
+    @return
+];
+
+## Module-scoped names.
+def MOD_NAMES = [
+    @{mod: @Format,    name: @formatterFor},
+    @{mod: @Format,    name: @usual},
+    @{mod: @Generator, name: @FilterGenerator},
+    @{mod: @Generator, name: @RepeatGenerator},
+    @{mod: @Generator, name: @collectAll},
+    @{mod: @Generator, name: @forEachAll},
+    @{mod: @Peg,       name: @any},
+    @{mod: @Peg,       name: @empty},
+    @{mod: @Peg,       name: @PegChoice},
+    @{mod: @Peg,       name: @PegCode},
+    @{mod: @Peg,       name: @PegLookaheadFailure},
+    @{mod: @Peg,       name: @PegLookaheadSuccess},
+    @{mod: @Peg,       name: @PegMain},
+    @{mod: @Peg,       name: @PegRepeat},
+    @{mod: @Peg,       name: @PegResult},
+    @{mod: @Peg,       name: @PegSequence},
+    @{mod: @Peg,       name: @PegThunk},
+    @{mod: @Peg,       name: @PegSet},
+    @{mod: @Peg,       name: @PegSetComplement},
+    @{mod: @Range,     name: @ClosedRange},
+    @{mod: @Range,     name: @OpenRange}
+];
+
+
+##
+## Exported Definitions
+##
+
+## Documented in spec.
+export def REFS = @{}.cat(
+    (NAMES.collect { name -> @{(name): makeVarFetch(name)} })*,
+
+    (MOD_NAMES.collect { modName ->
+        def mod = modName::mod;
+        def name = modName::name;
+        def modVar = makeVarFetch(@"$".cat(mod));
+        def refKey = mod.cat(@"_", name);
+        @{(refKey): makeGet(modVar, makeLiteral(name))}
+    })*
+);

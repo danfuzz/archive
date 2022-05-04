@@ -1,0 +1,66 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Simple template substitution facility
+##
+
+##
+## Private Definitions
+##
+
+def parSubstitution = {:
+    format = (
+        "%"
+        chars = [! "("]+
+        { $Peg::stringFromTokenList(chars) }
+    |
+        { "s" }
+    )
+
+    "("
+    name = [! ")"]+
+    ")"
+
+    {
+        {format, name: $Peg::symbolFromTokenList(name)}
+    }
+:};
+
+def parItem = {:
+    "\\"
+    (
+        parSubstitution
+    |
+        "\\"
+        { "\\" }
+    |
+        ch = .
+        { die("Invalid escape sequence: \%q("\\".cat(ch.name))") }
+    )
+|
+    chars = [! "\\"]+
+    { $Peg::stringFromTokenList(chars) }
+:};
+
+def parTemplate = {:
+    parItem*
+:};
+
+
+##
+## Exported Definitions
+##
+
+export fn apply(templateString, defs) {
+    def items = $Peg::apply(parTemplate, templateString);
+
+    def texts = [ item in items ->
+        String.accepts(item) |
+            $Format::formatterFor(item::format)(
+                defs[item::name] | "<MISSING \%q(item::name)>")
+    ];
+
+    return "\(texts)"
+};

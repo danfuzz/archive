@@ -1,0 +1,167 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## String demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+## Checks an expected result.
+fn expect(name, result, func) {
+    If.value { func() }
+        { got ->
+            If.not { Cmp.eq(got, result) }
+                {
+                    note("Unexpected result: ", $Format::source(got));
+                    die("For: ", name);
+                }
+        }
+        {
+            note("Unexpected void result.");
+            die("For: ", name);
+        }
+};
+
+## Checks an expected void result.
+fn expectVoid(name, func) {
+    If.value { func() }
+        { got ->
+            note("Unexpected non-void result: ", $Format::source(got));
+            die("For: ", name)
+        }
+};
+
+## Checks an expected equality.
+fn expectEq(name, v1, v2) {
+    If.not { Cmp.eq(v1, v2) }
+        {
+            note("Unexpected: ", $Format::source(v1), " != ",
+                $Format::source(v2));
+            die("For: ", name)
+        }
+};
+
+## Checks an expected inequality.
+fn expectNe(name, v1, v2) {
+    If.not { Cmp.ne(v1, v2) }
+        {
+            note("Unexpected: ", $Format::source(v1), " == ",
+                $Format::source(v2));
+            die("For: ", name)
+        }
+};
+
+
+##
+## Main demos
+##
+
+note("Hello, Самиздат!\n");
+note($Format::source("This is a string.\n"));
+
+expectEq("eq 1", "", "");
+expectEq("eq 2", "x", "x");
+expectEq("eq 3", "blort", "blort");
+expectEq("eq 4", "blort-fizmo-igram", "blort".cat("-fizmo", "-igram"));
+expectEq("eq 5", "z", "frotz".nth(4));
+
+expectNe("ne 1", "blort", "Blort");
+expectNe("ne 2", "blort", "blort ");
+expectNe("ne 3", "blort", "blort\0");
+
+expect("cat 1", "blort", { "blort".cat() });
+expect("cat 2", "blort", { "blort".cat("") });
+expect("cat 3", "blort", { "blo".cat("rt") });
+expect("cat 4", "blort", { "b".cat("lor", "t") });
+expect("cat 5", "blort", { "b".cat("", "lor", "", "t", "") });
+expect("cat 6", "blort", { "".cat("blort") });
+expect("cat 7", "blort", { "".cat(@blort) });
+expect("cat 8", "blort", { "b".cat(@lort) });
+expect("cat 9", "blort", { "b".cat(@lor, @t) });
+expect("cat 10", "blort", { "b".cat(@lor, "t") });
+
+expectEq("del 1",  "",        "".del());
+expectEq("del 2",  "",        "".del("wha?"));
+expectEq("del 3",  "",        "".del(-1));
+expectEq("del 4",  "",        "".del(0));
+expectEq("del 5",  "",        "".del(1));
+expectEq("del 5",  "",        "x".del(0));
+expectEq("del 6",  "x",       "x".del(-1));
+expectEq("del 7",  "x",       "x".del(1));
+expectEq("del 8",  "x",       "xy".del(1));
+expectEq("del 9",  "y",       "xy".del(0));
+expectEq("del 10", "y",       "xy".del(0, 0));
+expectEq("del 11", "",        "xy".del(0, 1));
+expectEq("del 12", "23",      "01234".del(0, 1, 4));
+expectEq("del 13", "muffins", "mufxfins".del(3));
+
+expectVoid("forEach 1",       { "".forEach() });
+expectEq("forEach 2",   "a",  "a".forEach());
+expectEq("forEach 3",   "c",  "abc".forEach());
+expectEq("forEach 4",   "zz", "abz".forEach { ch -> ch.cat(ch) });
+
+var x = "";
+"abc".forEach { ch -> x := x.cat("+", ch) };
+expectEq("forEach 5", "+a+b+c", x);
+
+expectEq("keyList 1", [],              "".keyList());
+expectEq("keyList 2", [0],             "x".keyList());
+expectEq("keyList 3", [0, 1, 2, 3, 4], "blort".keyList());
+
+expectEq("valueList 1", [],                        "".valueList());
+expectEq("valueList 2", ["x"],                     "x".valueList());
+expectEq("valueList 3", ["b", "l", "o", "r", "t"], "blort".valueList());
+
+expectEq("repeat 1", "",                 "".repeat(0));
+expectEq("repeat 2", "",                 "".repeat(1));
+expectEq("repeat 3", "",                 "".repeat(1000));
+expectEq("repeat 4", "",                 "muffin".repeat(0));
+expectEq("repeat 5", "muffin",           "muffin".repeat(1));
+expectEq("repeat 6", "muffinmuffin",     "muffin".repeat(2));
+expectEq("repeat 7", "xxxxxxxxxxxxxxxx", "x".repeat(16));
+
+expectVoid("reverseNth 1",      { "".reverseNth(0) });
+expectVoid("reverseNth 2",      { "".reverseNth(1) });
+expectVoid("reverseNth 3",      { "".reverseNth(-1) });
+expectEq("reverseNth 4",   "a", "a".reverseNth(0));
+expectVoid("reverseNth 5",      { "a".reverseNth(1) });
+expectVoid("reverseNth 6",      { "a".reverseNth(-1) });
+expectEq("reverseNth 7",   "x", "zyx".reverseNth(0));
+expectEq("reverseNth 8",   "y", "zyx".reverseNth(1));
+expectEq("reverseNth 9",   "z", "zyx".reverseNth(2));
+expectVoid("reverseNth 10",     { "zyx".reverseNth(3) });
+expectVoid("reverseNth 11",     { "zyx".reverseNth(-1) });
+
+expect("castFrom 1", "fizmo", { String.castFrom("fizmo") });
+expect("castFrom 2", "fizmo", { Core.castFrom("fizmo") });
+expect("castFrom 3", "fizmo", { Value.castFrom("fizmo") });
+expect("castFrom 4", "fizmo", { String.castFrom(@fizmo) });
+expect("castFrom 5", "B",     { String.castFrom(66) });
+expectVoid("castFrom 6",      { String.castFrom(null) });
+
+expect("castToward 1", "igram", { "igram".castToward(String) });
+expect("castToward 2", "igram", { "igram".castToward(Core) });
+expect("castToward 3", "igram", { "igram".castToward(Value) });
+expect("castToward 4", @igram,  { "igram".castToward(Symbol) });
+expect("castToward 5", 68,      { "D".castToward(Int) });
+expectVoid("castToward 6",      { "igram".castToward(Int) });
+expectVoid("castToward 7",      { "igram".castToward(Record) });
+
+expect("typeCast 1", "frotz", { Class.typeCast(String, "frotz") });
+expect("typeCast 2", "frotz", { Class.typeCast(Core, "frotz") });
+expect("typeCast 3", "frotz", { Class.typeCast(Value, "frotz") });
+expect("typeCast 4", "frotz", { Class.typeCast(String, @frotz) });
+expect("typeCast 5", "F",     { Class.typeCast(String, 70) });
+expect("typeCast 6", 70,      { Class.typeCast(Int, "F") });
+expect("typeCast 7", @frotz,  { Class.typeCast(Symbol, "frotz") });
+expectVoid("typeCast 8",      { Class.typeCast(String, null) });
+
+note("All good.");

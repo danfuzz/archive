@@ -1,0 +1,57 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Demo of local yield
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+fn bad() {
+    die("Wrong!")
+};
+
+fn good() {
+    note("Ok")
+};
+
+fn yieldVoid1() {
+    yield
+};
+
+fn yieldVoid2() {
+    ## This space intentionally left blank
+};
+
+fn yieldVoid3() {
+    yield? yieldVoid1()
+};
+
+fn yieldVoid4() {
+    "not-actually-yielded"
+};
+
+fn yieldArg(a) {
+    yield a
+};
+
+
+##
+## Main Tests
+##
+
+If.is(yieldVoid1, bad, good);
+If.is(yieldVoid2, bad, good);
+If.is(yieldVoid3, bad, good);
+If.is(yieldVoid4, bad, good);
+
+If.value { yieldArg("woo") }
+    { v -> note(v) }
+    { bad() };

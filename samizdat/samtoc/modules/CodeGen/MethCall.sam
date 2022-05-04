@@ -1,0 +1,112 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Method call tree.
+##
+
+import ./CodeString :: *;
+import ./Wrapper :: *;
+import ./indentation :: *;
+
+
+##
+## Class Definition
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class MethCall
+        access: ACCESS,
+        new: NEW {
+    class.new(target, name, args*) {
+        def fixTarget = CodeString.fix(target);
+        def fixName = CodeString.fix(name);
+        def fixArgs = [ a in args -> CodeString.fix(a) ];
+        var flatOk = false;
+
+        if ((#args < 5) & fixTarget.prefersFlat()) {
+            flatOk := true;
+            for (a in fixArgs) {
+                if (!a.prefersFlat()) {
+                    flatOk := false;
+                    break
+                }
+            }
+        };
+
+        return Wrapper.new(
+            this.(NEW)(
+                @{
+                    target: fixTarget,
+                    name:   fixName,
+                    args:   fixArgs,
+                    flatOk
+                }))
+    };
+
+    .flatten() {
+        def target = this.(ACCESS)(@target);
+        def name = this.(ACCESS)(@name);
+        def args = this.(ACCESS)(@args);
+
+        def argStr = if (#args == 0) {
+            "NULL"
+        } else {
+            "".cat(
+                "(zvalue[]) { ",
+                [ a in args, i in (#args.. by -1) ->
+                    "".cat(a.flatten(), (i == 1) & "" | ", ")
+                ]*,
+                " }")
+        };
+
+        return "".cat(
+            "methCall(",
+            target.flatten(), ", ",
+            name.flatten(), ", ",
+            "(zarray) {\(#args), ",
+            argStr,
+            "})"
+        )
+    };
+
+    .indent(level, maxColumns) {
+        def target = this.(ACCESS)(@target);
+        def name = this.(ACCESS)(@name);
+        def args = this.(ACCESS)(@args);
+        def prefix1 = INDENTATION[level];
+        def prefix2 = INDENTATION[level + 1];
+        def nextLevel = level + 1;
+
+        def argStr = if (#args == 0) {
+            "NULL"
+        } else {
+            def level2 = level + 2;
+            "".cat(
+                "(zvalue[]) {\n",
+                [ a in args, i in (#args.. by -1) ->
+                    a.indent(level2, maxColumns).cat(
+                        (i == 1) & "" | ",\n")
+                ]*,
+                "}")
+        };
+
+        return "".cat(
+            prefix1, "methCall(\n",
+            target.indent(nextLevel, maxColumns), ",\n",
+            name.indent(nextLevel, maxColumns), ",\n",
+            prefix2, "(zarray) {\(#args),\n",
+            prefix2, argStr,
+            "})"
+        )
+    };
+
+    .prefersFlat() {
+        def flatOk = this.(ACCESS)(@flatOk);
+        return? flatOk** & this;
+    };
+};

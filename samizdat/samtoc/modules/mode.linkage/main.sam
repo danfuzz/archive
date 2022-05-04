@@ -1,0 +1,53 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Compilation mode "linkage" which generates `.saminfo` files.
+##
+
+import core.Io0;
+
+import Resolver :: *;
+import Template;
+
+import @utf8 ./template.txt;
+
+
+##
+## Exported Definitions
+##
+
+## Compiles a single file.
+export fn compile(resolver, sourcePath, targetPath) {
+    ## In order for this to work, it has to transform `sourcePath` into
+    ## an `@internal` source relative to `resolver`. Since this functionality
+    ## may never be needed, this is just stubbed out here.
+
+    def source = die("TODO: Transform `sourcePath` to `source`.");
+    def result = resolver.resolve(source);
+
+    def infoMap = result::info;
+    def info = "\%q(infoMap)";
+    def outputText = $Template::apply($template, {info});
+
+    $Io0::writeFileUtf8(targetPath, outputText)
+};
+
+## Compiles a module en masse. `sourcePath` is a directory.
+export fn compileModule(resolver, sourcePath, targetPath) {
+    def captiveResolver =
+        ExternalResolver.new("\(sourcePath)/modules", resolver);
+    def internalResolver =
+        InternalResolver.new(sourcePath, captiveResolver);
+    def result = internalResolver.resolve(@internal{name: "main"})
+        | die("Unable to resolve `main`: \(sourcePath)");
+
+    def infoMap = result::info;
+    def info = "\%q(infoMap)";
+    def outputText = $Template::apply($template, {info});
+
+    $Io0::writeFileUtf8(targetPath, outputText)
+};
+
+export def SUFFIX = "saminfo";

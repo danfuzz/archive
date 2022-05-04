@@ -1,0 +1,90 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Switch expression demo
+##
+
+
+##
+## Private Definitions
+##
+
+fn noDefault(value) {
+    return? switch (value) {
+        1: { "blort" }
+    }
+};
+
+fn powerName(value) {
+    return? switch /out (value) {
+        1:           { yield "one" };
+        2:           { yield /out "two" };
+        4:           { return "four" };
+        8:           { /outie -> yield /outie "eight" };
+        (1..4)*:     { yield "um..." };
+        5: 6: blort: { yield "wha?" };
+        99:          { "shouldBeVoid" };
+        default:     { yield "uh..." }
+    }
+};
+
+fn interpolator(value, keys) {
+    return switch (value) {
+        10: 11:      { "Constant override" };
+        (value * 0): { /out -> yield /out "Calculated override" };
+        keys*:       { "Yes" };
+        default:     { "No" }
+    }
+};
+
+fn namer(value) {
+    return switch (def x = value) {
+        1: 2: 3: { x * 10   };
+        4: 5: 6: { x * 100  };
+        default: { x * 1000 }
+    }
+};
+
+
+##
+## Main Tests
+##
+
+note("No default...");
+note(noDefault(1));
+
+If.is { noDefault(2) }
+    { die("Bad void.") };
+
+note("\nPower...");
+note(powerName(0));
+note(powerName(1));
+note(powerName(2));
+note(powerName(3));
+note(powerName(4));
+note(powerName(5));
+note(powerName(6));
+note(powerName(7));
+note(powerName(8));
+note(powerName("blort"));
+
+If.is { powerName(99) }
+    { die("Bad void.") };
+
+note("\nInterpolate...");
+note(interpolator(1, [1, 2, 3]));
+note(interpolator(2, [4..6]));
+note(interpolator(10, [8..18]));
+note(interpolator(11, [8..18]));
+note(interpolator(0, [0, 5]));
+
+note("\nNames...");
+note($Format::source(namer(1)));
+note($Format::source(namer(2)));
+note($Format::source(namer(3)));
+note($Format::source(namer(4)));
+note($Format::source(namer(5)));
+note($Format::source(namer(6)));
+note($Format::source(namer(7)));

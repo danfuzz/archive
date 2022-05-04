@@ -1,0 +1,55 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Variable assignment tree.
+##
+
+import ./CodeString :: *;
+import ./Wrapper :: *;
+
+
+##
+## Class Definition
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class Assign
+        access: ACCESS,
+        new: NEW {
+    class.new(target, value) {
+        return Wrapper.new(
+            this.(NEW)(@{
+                target: CodeString.fix(target),
+                value: CodeString.fix(value)
+            }))
+    };
+
+    .flatten() {
+        def target = this.(ACCESS)(@target);
+        def value = this.(ACCESS)(@value);
+        return "\(target.flatten()) = \(value.flatten())"
+    };
+
+    .indent(level, maxColumns) {
+        def target = this.(ACCESS)(@target);
+        def value = this.(ACCESS)(@value);
+        return "".cat(
+            target.indent(level, maxColumns),
+            " =\n",
+            value.indent(level + 1, maxColumns)
+        )
+    };
+
+    .prefersFlat() {
+        def target = this.(ACCESS)(@target);
+        def value = this.(ACCESS)(@value);
+        return? target.prefersFlat()
+            & value.prefersFlat()
+            & this
+    };
+};

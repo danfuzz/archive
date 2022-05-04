@@ -1,0 +1,231 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+import CodeGen :: *;
+import VarCalc :: get_varRefs;
+
+
+
+##
+## Private Definitions
+##
+
+## Set-like map of valid C identifier characters.
+def C_IDENT_CHARS = {
+    ("0".."9")*: true,
+    ("A".."Z")*: true,
+    ("a".."z")*: true,
+    ("_"):       true
+};
+
+## Snippets of code for parsing incoming arguments, when at least one formal
+## has a repeat specifier. See `processFormalsWithRepeat` below.
+def FORMAL_PARSERS = {
+    ## Non-repeat.
+    @".": {
+        parse:  "(argAt >= args.size) ? EMPTY_LIST : args.elems[argAt]",
+        update: "if (argAt < args.size) { argAt++; }"
+    },
+
+    ## Zero-or-one.
+    @"?": {
+        parse:
+            "(argAt >= args.size) \
+            ? EMPTY_LIST : listFromValue(args.elems[argAt])",
+        update: "if (argAt < args.size) { argAt++; }"
+    },
+
+    ## Zero-or-more and one-or-more.
+    @"*":
+    @"+": {
+        parse:  "listFromZarray((zarray) {args.size - argAt, &args.elems[argAt]})",
+        update: "argAt = args.size"
+    }
+};
+
+## Helper for `processFormals*` which produces the helpful commentary about
+## unnamed formals.
+fn unnamedFormals(clo) {
+    return [ idx in (0..), f in clo::formals ->
+        (!f::name) & Comment.new("Unnamed formal \(idx)")
+    ];
+};
+
+## Helper for `processFormals` which does the more complicated processing
+## required for handling repeat specifiers.
+fn processFormalsWithRepeat(clo, names) {
+    def varList = [ idx in (0..), f in clo::formals ->
+        def parse = FORMAL_PARSERS[f::repeat | @"."];
+
+        if (def origName = f::name) {
+            def name = safeName("arg", origName, idx);
+            def rawName = "raw_\(name)";
+            @{
+                kind: "arg",
+                name,
+                origName,
+                preInit: [
+                    Assign.new("zvalue \(rawName)", parse::parse),
+                    parse::update
+                ],
+                init: MethCall.new("CLS_Result", "SYM(new)", rawName)
+            }
+        } else {
+            ## Note: Because we have to adjust `argAt` for unnamed formals, we
+            ## can't just skip the formal entirely.
+            @{preInit: [parse::update]}
+        };
+    ];
+
+    def preInits = [
+        "zint argAt = 0",
+        [].cat([ v in varList -> v::preInit ]*)*
+    ];
+
+    def vars = [ v in varList ->
+        (def origName = v::origName)
+            & @{(origName): v.del(@preInit)}
+    ];
+
+    return {names, preInits, cleanups: [], vars: @{}.cat(vars*)}
+};
+
+## Returns `@{names, preInits, cleanups, vars}` for the formal arguments to
+## the given closure, if any.
+fn processFormals(clo) {
+    def names = [ f in clo::formals -> f::name ];
+
+    def vars = [ idx in (0..), f in clo::formals ->
+        if (f::repeat) {
+            ## At least one argument has a repeat specifier. Do the requisite
+            ## processing.
+            return processFormalsWithRepeat(clo, names)
+        };
+
+        (def name = f::name)
+            & @{(name): {
+                origName: name,
+                kind:     "arg",
+                name:     safeName("arg", name, idx),
+                init:     MethCall.new("CLS_Result", "SYM(new)",
+                              "args.elems[\(idx)]")
+            }}
+    ];
+
+    return {names, preInits: [], cleanups: [], vars: @{}.cat(vars*)}
+};
+
+## Returns `@{names, preInits, cleanups, vars}` for the yield definition of
+## the given closure, if any.
+fn processYieldDef(clo) {
+    return if (def name = clo::yieldDef) {
+        @{
+            names: [name],
+            preInits: [
+                "zvalue jump = makeJump()",
+                "jumpArm(jump)"
+            ],
+            cleanups: ["jumpRetire(jump)"],
+            vars: @{(name): @{
+                    origName: "<\(name)>" as Symbol,
+                    kind:     "yield",
+                    name:     safeName("yield", name),
+                    init:     MethCall.new("CLS_Result", "SYM(new)", "jump")
+                }}
+        }
+    } else {
+        @{names: [], preInits: [], cleanups: [], vars: @{}}
+    }
+};
+
+## Returns `@{names, preInits, cleanups, vars}` for the free variables of the
+## given closure, if any.
+fn processFreeVars(clo) {
+    def names = get_varRefs(clo);
+    def vars = [ idx in (0..), name in names ->
+        @{(name): @{
+            origName: name,
+            kind:     "free",
+            name:     freeVarName(name, idx),
+            init:     "state[\(idx)]"
+        }}
+    ];
+
+    return @{names, preInits: [], cleanups: [], vars: @{}.cat(vars*)}
+};
+
+## Makes a "safe" (syntactically correct C) variable name, given a `prefix`
+## (must be safe), an arbitrary original `name`, and an optional `optIndex`
+## (an unsigned int).
+fn safeName(prefix, name, optIndex?) {
+    def nameStr = name as String;
+    def chars = [ ch in nameStr -> C_IDENT_CHARS[ch] & ch | "_" ];
+    def index = (def i = optIndex*) & [i, "_"] | "";
+
+    return "\(prefix)_\(index)\(chars)"
+};
+
+
+##
+## Exported Definitions
+##
+
+## Gets the C variable declaration to use for the variable at the indicated
+## index (into a list of free variables) and with the given original name.
+export fn freeVarDecl(name, index) {
+    return safeName("zvalue free", name, index)
+};
+
+## Gets the C variable name to use for the variable at the indicated
+## index (into a list of free variables) and with the given original name.
+export fn freeVarName(name, index) {
+    return safeName("free", name, index)
+};
+
+## Gets the C variable declaration to use for the variable at the indicated
+## index (into a list of local variables) and with the given original name.
+export fn localVarDecl(name, index) {
+    return safeName("zvalue local", name, index)
+};
+
+## Gets the C variable name to use for the variable at the indicated
+## index (into a list of local variables) and with the given original name.
+export fn localVarName(name, index) {
+    return safeName("local", name, index)
+};
+
+## Returns `@{names, inits, cleanups, vars}` for all variables that are
+## defined within the given closure.
+export fn processVars(clo) {
+    def formals = processFormals(clo);
+    def freeVars = processFreeVars(clo);
+    def yieldDef = processYieldDef(clo);
+
+    def vars = @{formals::vars*, freeVars::vars*, yieldDef::vars*};
+    def names = [formals::names*, freeVars::names*, yieldDef::names*];
+
+    ## Make C local variable defintions for all the variables.
+    def varStats = [ name in names ->
+        def binding = vars[name];
+        Comment.new(
+            "\%q(binding::origName as String)",
+            Assign.new("zvalue \(binding::name)", binding::init));
+    ];
+
+    return @{
+        cleanups: [
+            formals::cleanups*,
+            freeVars::cleanups*,
+            yieldDef::cleanups*
+        ],
+        inits: [
+            unnamedFormals(clo)*,
+            formals::preInits*,
+            freeVars::preInits*,
+            yieldDef::preInits*,
+            varStats*],
+        names,
+        vars
+    }
+};

@@ -1,0 +1,89 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## FilePath demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import core.FilePath;
+
+
+##
+## Private Definitions
+##
+
+## Print the given value.
+fn msg(value) {
+    note("    ", $Format::source(value))
+};
+
+
+##
+## Main Tests
+##
+
+note("fixPath:");
+msg($FilePath::fixPath("."));
+msg($FilePath::fixPath("blort"));
+msg($FilePath::fixPath("blort/zorch"));
+msg($FilePath::fixPath("/"));
+msg($FilePath::fixPath("/blort"));
+msg($FilePath::fixPath("/blort/zorch"));
+msg($FilePath::fixPath(".", "/x"));
+msg($FilePath::fixPath("blort", "/x"));
+msg($FilePath::fixPath("blort/zorch", "/x"));
+msg($FilePath::fixPath("/", "/x"));
+msg($FilePath::fixPath("/blort", "/x"));
+msg($FilePath::fixPath("/blort/zorch", "/x"));
+msg($FilePath::fixPath(".", "x"));
+msg($FilePath::fixPath("blort", "x"));
+msg($FilePath::fixPath("blort/zorch", "x"));
+msg($FilePath::fixPath("/", "x"));
+msg($FilePath::fixPath("/blort", "x"));
+msg($FilePath::fixPath("/blort/zorch", "x"));
+msg($FilePath::fixPath("blort/zorch", "x/y", "/fizmo"));
+msg($FilePath::fixPath("blort/zorch", "/x/y", "/fizmo"));
+
+note("\nget_directory:");
+msg($FilePath::get_directory("."));
+msg($FilePath::get_directory("blort"));
+msg($FilePath::get_directory("blort/"));
+msg($FilePath::get_directory("blort//"));
+msg($FilePath::get_directory("blort/zorch"));
+msg($FilePath::get_directory("blort/zorch/"));
+msg($FilePath::get_directory("blort/zorch//"));
+msg($FilePath::get_directory("blort/zorch///"));
+msg($FilePath::get_directory("/"));
+msg($FilePath::get_directory("//"));
+msg($FilePath::get_directory("///"));
+msg($FilePath::get_directory("/blort"));
+msg($FilePath::get_directory("/blort/"));
+msg($FilePath::get_directory("/blort//"));
+msg($FilePath::get_directory("/blort/zorch"));
+msg($FilePath::get_directory("/blort/zorch/"));
+msg($FilePath::get_directory("/blort/zorch//"));
+msg($FilePath::get_directory("/blort/zorch///"));
+
+note("\nget_file:");
+msg($FilePath::get_file("."));
+msg($FilePath::get_file("blort"));
+msg($FilePath::get_file("blort/"));
+msg($FilePath::get_file("blort//"));
+msg($FilePath::get_file("blort/zorch"));
+msg($FilePath::get_file("blort/zorch/"));
+msg($FilePath::get_file("blort/zorch//"));
+msg($FilePath::get_file("blort/zorch///"));
+msg($FilePath::get_file("/"));
+msg($FilePath::get_file("//"));
+msg($FilePath::get_file("///"));
+msg($FilePath::get_file("/blort"));
+msg($FilePath::get_file("/blort/"));
+msg($FilePath::get_file("/blort//"));
+msg($FilePath::get_file("/blort/zorch"));
+msg($FilePath::get_file("/blort/zorch/"));
+msg($FilePath::get_file("/blort/zorch//"));
+msg($FilePath::get_file("/blort/zorch///"));

@@ -1,0 +1,186 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `sourceGeneral` and helpers
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import ./identifier :: isIdentifier;
+import ./int :: intWithBase;
+import ./string :: stringChar;
+
+
+## Helper for optionally adorning results.
+fn adornIf(adorn, before, value, after) {
+    return If.is { Cmp.eq(adorn, true) }
+        { before.cat(value, after) }
+        { value }
+};
+
+## Helper which concatenates a list of list or map element stringifications.
+## It assumes that every element is a string that starts with `", "`, and it
+## removes that prefix from the first element. As a special case, this returns
+## `""` if given `[]` for `elems`.
+fn collectionBody(elems) {
+    If.is { Cmp.eq(elems, []) }
+        { return "" };
+
+    def one = elems.nth(0).sliceInclusive(2);
+    return one.cat(elems.sliceInclusive(1)*)
+};
+
+## Values with special conversions.
+def SPECIAL_VALUES = {
+    (Bool):        "Bool",
+    (Box):         "Box",
+    (Cell):        "Cell",
+    (Class):       "Class",
+    (Cmp):         "Cmp",
+    (Core):        "Core",
+    (If):          "If",
+    (Int):         "Int",
+    (Lazy):        "Lazy",
+    (List):        "List",
+    (Map):         "Map",
+    (Metaclass):   "Metaclass",
+    (Null):        "Null",
+    (NullBox):     "NullBox",
+    (Object):      "Object",
+    (Promise):     "Promise",
+    (Record):      "Record",
+    (Result):      "Result",
+    (String):      "String",
+    (Symbol):      "Symbol",
+    (SymbolTable): "SymbolTable",
+    (Value):       "Value",
+    (false):       "false",
+    (null):        "null",
+    (nullBox):     "nullBox",
+    (true):        "true"
+};
+
+## Stringifies a name, which must be a symbol, possibly with a prefix. If
+## the prefix is empty and the symbol does not look like an identifier, then
+## the result is backslash-prefixed in addition to being quoted.
+fn nameString(prefix, name) {
+    def nameString = Class.typeCast(String, name);
+
+    If.is { isIdentifier(name) }
+        { return prefix.cat(nameString) };
+
+    def finalPrefix = If.or { Cmp.ne(prefix, "") } { "\\" };
+    return finalPrefix.cat(sourceGeneral(nameString, true))
+};
+
+## Stringifies a map key.
+fn keyString(key) {
+    If.is { Symbol.accepts(key) }
+        { return nameString("", key) };
+
+    If.value { SPECIAL_VALUES.get(key) }
+        { string -> return "(".cat(string, ")") };
+
+    return sourceGeneral(key, true)
+};
+
+## Stringifies a class.
+fn Class_source(value, adorn) {
+    def name = value.get_name();
+
+    return "".cat("@<class ", sourceGeneral(name, true), ">")
+};
+
+## Stringifies an int.
+fn Int_source(value, adorn) {
+    return intWithBase(value, 10)
+};
+
+## Stringifies a list.
+fn List_source(value, adorn) {
+    def listElems = value.collect
+        { elem -> ", ".cat(sourceGeneral(elem, true)) };
+
+    return adornIf(adorn, "[", collectionBody(listElems), "]")
+};
+
+## Stringifies a map.
+fn Map_source(value, adorn) {
+    def mapElems = value.collect
+        { mapping ->
+            def k = keyString(mapping.get_key());
+            def v = sourceGeneral(mapping.get_value(), true);
+            ", ".cat(k, ": ", v)
+        };
+
+    return adornIf(adorn, "{", collectionBody(mapElems), "}");
+};
+
+## Stringifies a record.
+fn Record_source(value, adorn) {
+    return "".cat(
+        nameString("@", value.get_name()),
+        "{",
+        sourceGeneral(value.get_data(), false),
+        "}")
+};
+
+## Stringifies a string.
+fn String_source(value, adorn) {
+    def bodyChars = value.collect(stringChar);
+    return adornIf(adorn, "\"", "".cat(bodyChars*), "\"")
+};
+
+## Stringifies a symbol.
+fn Symbol_source(value, adorn) {
+    If.is { Cmp.eq(adorn, false) }
+        { return sourceGeneral(Class.typeCast(String, value), false) };
+
+    def prefix = If.is { value.isInterned() } { "@" } { "@+" };
+    return nameString(prefix, value);
+};
+
+## Stringifies a symbol table.
+fn SymbolTable_source(value, adorn) {
+    ## Convert to a map, and stringify that, with the requisite `@` prefix
+    ## if requested.
+    def mapString = sourceGeneral({}.cat(value), adorn);
+    return adornIf(adorn, "@", mapString, "")
+};
+
+## Stringifies an opaque core value.
+fn Value_source(value, adorn) {
+    def nameStr = If.value { value.debugSymbol() }
+        { name -> " ".cat(keyString(name)) }
+        { "" };
+
+    return "".cat(
+        "@<",
+        nameString("", Class.of(value).get_name()),
+        nameStr,
+        ">")
+};
+
+## Common code for the two `source*` variants, which takes an
+## `adorn` flag.
+export fn sourceGeneral(value, adorn) {
+    return If.or
+        { SPECIAL_VALUES.get(value) }
+        {
+            If.cases({ Class.of(value) },
+                {
+                    (Class):       { . -> Class_source(value, adorn)       },
+                    (Int):         { . -> Int_source(value, adorn)         },
+                    (List):        { . -> List_source(value, adorn)        },
+                    (Map):         { . -> Map_source(value, adorn)         },
+                    (Record):      { . -> Record_source(value, adorn)      },
+                    (String):      { . -> String_source(value, adorn)      },
+                    (Symbol):      { . -> Symbol_source(value, adorn)      },
+                    (SymbolTable): { . -> SymbolTable_source(value, adorn) }
+                },
+                { . -> Value_source(value, adorn) })
+        }
+};

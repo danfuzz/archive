@@ -1,0 +1,32 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+## List of the names of all of the keywords, as symbols
+def KEYWORD_NAMES = [
+    ## Layer 0.
+    @break, @class, @continue, @def, @export, @false, @fn, @import, @null,
+    @return, @true, @var, @yield,
+
+    ## Layer 2.
+    @as, @by, @default, @do, @else, @for, @if, @in, @isa, @module, @switch,
+    @while
+];
+
+
+##
+## Exported Definitions
+##
+
+## Documented in spec.
+export def KEYWORDS = @{}.cat(
+    (KEYWORD_NAMES.collect { name -> @{(name): @(name){}} })*
+);

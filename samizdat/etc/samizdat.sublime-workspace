@@ -1,0 +1,797 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"datH",
+				"datHighletTypeIs"
+			],
+			[
+				"ne",
+				"ne"
+			],
+			[
+				"str",
+				"stringletNth"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "/Users/danfuzz/src-danfuzz/samizdat/CHANGELOG.md",
+			"settings":
+			{
+				"buffer_size": 8899,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/danfuzz/src-danfuzz/samizdat/doc/notes/README.md",
+			"settings":
+			{
+				"buffer_size": 344,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/danfuzz/src-danfuzz/samizdat/stackover.sam",
+			"settings":
+			{
+				"buffer_size": 0,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/danfuzz/src-danfuzz/samizdat/samex-naif/cls/Generator.c",
+			"settings":
+			{
+				"buffer_size": 4598,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/Users/danfuzz/src-danfuzz/samizdat/samex-naif/include/dat/frame.h",
+			"settings":
+			{
+				"buffer_size": 2275,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "Demo",
+	"command_palette":
+	{
+		"height": 107.0,
+		"selected_items":
+		[
+			[
+				"sort",
+				"Sort Lines"
+			],
+			[
+				"sor",
+				"Sort Lines"
+			],
+			[
+				"commen",
+				"Toggle Comment"
+			],
+			[
+				"comm",
+				"Toggle Comment"
+			]
+		],
+		"width": 392.0
+	},
+	"console":
+	{
+		"height": 0.0
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"file_history":
+	[
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/frame.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/notes/design-highlights.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/notes/why-aggressively-self-hosted.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/notes/shout-outs.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/README.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/notes/startup-walk-through.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/SymbolTable.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.LangNode/constructors1.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/langnode/constructors1.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/VERSION.txt",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/include/type/Record.h",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/library-guide/core.LangNode.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.LangNode/constructors2.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Globals/primitives.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/library-guide/core.Generator/ParaGenerator.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/mode.simple/vars.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/VarCalc/get_varRefs.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lang/const-def.h",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lang/ClosureNode.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lang/impl.h",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lang/ExecNode.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lang/helpers.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lang/helpers.h",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Lang1/simplify.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Lang2/parse.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Lang1/parse.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/language-guide/11-execution-trees.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/include/type/SymbolTable.h",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lang/langnode.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lang/langnode.h",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.LangNode/getters.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/library-guide/LangNode.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/language-guide/a03-tree-grammar-1.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lang/parse.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.LangNode/literals.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/List.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Generator/SerialGenerator.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Generator/ParaGenerator.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/mode.simple/Interner.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/mode.simple/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/CodeGen/Return.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/mode.simple/translate.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/VarCalc/get_varDefs.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/Template/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/CodeGen/Call.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/CodeGen/CodeString.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/CodeGen/Assign.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/CodeGen/Comment.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/CodeGen/indentation.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/CodeGen/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/CodeGen/MethCall.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/CodeGen/Statement.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/CodeGen/Wrapper.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Lang2/safeVar.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/include/dat/symbols-def.h",
+		"/Users/danfuzz/src-danfuzz/samizdat/demo/lib-005-list/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/Record.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lang/execute.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/include/util.h",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/LookupCache.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lang/init.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/include/type/Symbol.h",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lang/Closure.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/Symbol.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/impl.h",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/include/dat.h",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/alloc.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/Class.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/Value.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/library-guide/README.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/library-guide/core.Peg/README.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.LangNode/refs.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/demo/lib-020-format/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/library-guide/core.Peg/PegLookaheadFailure.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/library-guide/core.Peg/PegTokenSetComplement.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Peg/PegLookaheadFailure.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Peg/PegSequence.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Peg/PegTokenSetComplement.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/library-guide/core.Peg/PegSetComplement.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/library-guide/core.Peg/PegSet.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Lang1/tokenize.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Peg/misc.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Peg/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/library-guide/core.Peg/PegTokenSet.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Peg/PegTokenSet.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Peg/PegLookaheadSuccess.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lib/prim-def.h",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/include/dat/call.h",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lib/conditional.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/Sequence.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/Map.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/Generator.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/Object.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/String.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/library-guide/String.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/library-guide/Bool.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lib/Value.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/call.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/modules/DataCode/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/demo/0-001-bool-literal/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/include/type/methodCalls.h",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/lang/frame.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/library-guide/OneOff.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/library-guide/Int.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/library-guide/Symbol.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/Int.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/dat/Bool.c",
+		"/Users/danfuzz/src-danfuzz/samizdat/demo/0-025-bool-ops/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/demo/0-031-compare-functions/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/demo/0-036-misc/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/etc/buildEntityMap.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Format/identifier.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Format/string.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Lang2/tokenize.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.LangNode/resolve.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Range/rangeAdd.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Format/sourceGeneral.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/include/type/define.h",
+		"/Users/danfuzz/src-danfuzz/samizdat/demo/0-024-string-ops/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/demo/1-001-calc/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/demo/2-022-calc/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Range/ClosedRange.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/demo/0-023-value-construction/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/doc/language-guide/a02-token-grammar-1.md",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.CommandLine/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samlib-naif/modules/core.Format/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samtoc/main.sam",
+		"/Users/danfuzz/src-danfuzz/samizdat/samex-naif/include/type/Class.h"
+	],
+	"find":
+	{
+		"height": 35.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"symboleq",
+			"cleanup",
+			"$vars",
+			"makesymbolliteral",
+			"parreco",
+			"parrecor",
+			"Record",
+			"symtabget2",
+			"formal",
+			"formals",
+			"formal",
+			"convertpexin",
+			"mapfrommapping",
+			"mapfrom1",
+			"tablefrom",
+			"exnoexecutestatements",
+			"statementsarr",
+			"values",
+			"format::",
+			"maxof",
+			"safename",
+			"\\[",
+			"OpenRange",
+			"safevar",
+			"makeVarName",
+			"makevarname",
+			"qsort",
+			"framesnap",
+			"formals:",
+			"withformals",
+			"name:",
+			"defmap",
+			"cm_get",
+			"magic",
+			"===",
+			"sanitycheck",
+			"marked",
+			"allocationCount",
+			"gcmar",
+			"execexpression",
+			"execexpressionVoidok",
+			"box",
+			".sam",
+			"makeString",
+			"pegto",
+			"pegseq",
+			"pegresult",
+			"makecharsetcomplement",
+			"pegtokensetcom",
+			"pegtokenset",
+			"makecharset(",
+			"makecharset",
+			"namelistfrom",
+			"makeToken",
+			"makeTokenset",
+			"makeToken",
+			"makeTokenSet",
+			"makefuncallliterals",
+			"maketokensetcom",
+			"makeLookaheadSuccess",
+			"makefuncallpex",
+			"makeLookaheadFailure",
+			"genmethcall",
+			"literalinits",
+			"FUN_CALL",
+			"funcall",
+			"funCall",
+			"METH_CALL_old",
+			"tostring",
+			"tologic",
+			"tostring",
+			"string",
+			"castfrom",
+			"tostring",
+			"toString",
+			"toint",
+			"tosym",
+			"tosymbol",
+			"blort",
+			"ifvalues",
+			"??",
+			"get_size",
+			"cls",
+			"record",
+			"class",
+			"makeToken(@@",
+			"maketokenset",
+			"@tokenSet",
+			"maketokense",
+			"get_select",
+			".values",
+			"get_values",
+			".function",
+			"get_function",
+			".target",
+			"get_target",
+			"\\.nodeValue",
+			"get_nodevalue",
+			"get_nodeValue\\(([^()]*)\\)",
+			"get_nodeValue\\(([^)]*)\\)",
+			".name",
+			"get_name",
+			"get_source",
+			"get_format",
+			"genericdef",
+			"pargenericdef",
+			"GET(",
+			"identifierstring",
+			"NamedSelector",
+			"anony",
+			"asser",
+			"generic",
+			"genericbind",
+			"pargenericdef",
+			"makegeneric",
+			"generic",
+			"gener",
+			"DAT_USE_METHOD",
+			"===",
+			"====",
+			"->elems",
+			"allocstring",
+			"listfrom",
+			"gfn",
+			"store",
+			"this",
+			"resolver::",
+			"makeexternalresolver"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+			".md",
+			"PegSequence.newString",
+			"PegTokenSetComplement.newChars",
+			"PegTokenSet.newChars(",
+			"PegTokenSet.newChars",
+			"PegTokenSet.new",
+			"PegLookaheadSuccess.new",
+			"PegLookaheadFailure.new",
+			"frotz",
+			"fizmo",
+			"igram",
+			"name",
+			"makeToken(@",
+			"::target",
+			"::value",
+			"\\1::value",
+			"InternedSelector",
+			"data",
+			"Call",
+			"data",
+			"PegTokenSetComplement",
+			"PegTokenSet",
+			"PegMain",
+			"PegSequence",
+			"PegChoice",
+			"PegRepeat",
+			"PegThunk",
+			"PegCode",
+			"Failure",
+			"PegLookaheadSuccess",
+			"PegResult",
+			"PegFail",
+			"PegEof",
+			"NEXT_INDEX",
+			"",
+			"functionDef",
+			"withFormals",
+			"this",
+			"other",
+			"this",
+			"$\\1::",
+			"$FilePath",
+			"box::",
+			"b",
+			"bitwise_",
+			"doCore",
+			"<>",
+			"makeIncrementGenerator",
+			"sourceString",
+			"makeSeqGenerator",
+			"\\1:",
+			"nleState",
+			"NleState",
+			"/]",
+			"[/",
+			"/}",
+			"{/",
+			"<outx>",
+			"unary",
+			"seqRule",
+			"readOne"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "/Users/danfuzz/src-danfuzz/samizdat/CHANGELOG.md",
+					"settings":
+					{
+						"buffer_size": 8899,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Markdown/Markdown.tmLanguage",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 34.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "/Users/danfuzz/src-danfuzz/samizdat/doc/notes/README.md",
+					"settings":
+					{
+						"buffer_size": 344,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								109,
+								109
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Markdown/Markdown.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/Users/danfuzz/src-danfuzz/samizdat/stackover.sam",
+					"settings":
+					{
+						"buffer_size": 0,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/User/Samizdat/Samizdat.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "/Users/danfuzz/src-danfuzz/samizdat/samex-naif/cls/Generator.c",
+					"settings":
+					{
+						"buffer_size": 4598,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1987,
+								1987
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 401.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "/Users/danfuzz/src-danfuzz/samizdat/samex-naif/include/dat/frame.h",
+					"settings":
+					{
+						"buffer_size": 2275,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2268,
+								2268
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.tmLanguage",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 570.0,
+						"zoom_level": 1.0
+					},
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 0.0
+	},
+	"input":
+	{
+		"height": 32.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 106.0
+	},
+	"replace":
+	{
+		"height": 64.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+			[
+				"para",
+				"doc/library-guide/core.Generator/ParaGenerator.md"
+			],
+			[
+				"constr",
+				"samlib-naif/modules/core.LangNode/constructors2.sam"
+			],
+			[
+				"recor",
+				"samex-naif/include/type/Record.h"
+			],
+			[
+				"constru",
+				"samlib-naif/modules/core.LangNode/constructors1.sam"
+			],
+			[
+				"prim-def",
+				"samex-naif/lib/prim-def.h"
+			],
+			[
+				"condi",
+				"samex-naif/lib/conditional.c"
+			],
+			[
+				"execut",
+				"samex-naif/lang/execute.c"
+			],
+			[
+				"call.h",
+				"samex-naif/include/dat/call.h"
+			],
+			[
+				"call.c",
+				"samex-naif/dat/call.c"
+			],
+			[
+				"oneoff",
+				"doc/library-guide/OneOff.md"
+			],
+			[
+				"class.c",
+				"samex-naif/dat/Class.c"
+			],
+			[
+				"metho",
+				"samex-naif/include/type/methodCalls.h"
+			],
+			[
+				"define",
+				"samex-naif/include/type/define.h"
+			],
+			[
+				"string.c",
+				"samex-naif/dat/String.c"
+			],
+			[
+				"bool.c",
+				"samex-naif/dat/Bool.c"
+			],
+			[
+				"tokenize.",
+				"samlib-naif/modules/core.Lang2/tokenize.sam"
+			],
+			[
+				"string.m",
+				"doc/library-guide/String.md"
+			],
+			[
+				"value",
+				"samex-naif/lib/Value.c"
+			],
+			[
+				"exe",
+				"samex-naif/lang/execute.c"
+			],
+			[
+				"im",
+				"samex-naif/dat/impl.h"
+			],
+			[
+				"imp",
+				"samex-naif/lang/impl.h"
+			],
+			[
+				"class.h",
+				"samex-naif/include/type/Class.h"
+			],
+			[
+				"prim",
+				"samex-naif/lib/prim-def.h"
+			],
+			[
+				"langno",
+				"samex-naif/lang/langnode.c"
+			],
+			[
+				"parse",
+				"samex-naif/lang/parse.c"
+			],
+			[
+				"prim-de",
+				"samex-naif/lib/prim-def.h"
+			],
+			[
+				"parse.",
+				"samlib-naif/modules/core.Lang2/parse.sam"
+			],
+			[
+				"init.c",
+				"samex-naif/lib/init.c"
+			],
+			[
+				"peg.sam",
+				"samizdat-0-lib/peg.sam0"
+			],
+			[
+				"sam0md",
+				"doc/samizdat-0.md"
+			],
+			[
+				"md",
+				"doc/README.md"
+			],
+			[
+				"librar",
+				"samizdat-0-lib/library.sam0"
+			],
+			[
+				"dat.h",
+				"samizdat-0/dat.h"
+			],
+			[
+				"dem",
+				"demo/demo.sam0"
+			],
+			[
+				"token",
+				"samizdat-0/lang/tokenize.c"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 254.0,
+	"status_bar_visible": true
+}

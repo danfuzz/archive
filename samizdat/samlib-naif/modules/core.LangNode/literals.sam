@@ -1,0 +1,155 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+## Literal symbols.
+def SYMBOLS = [
+    @access,
+    @call,
+    @cat,
+    @collect,
+    @exclusive,
+    @exports,
+    @fromLogic,
+    @get,
+    @inclusive,
+    @info,
+    @new,
+    @newExclusive,
+    @newInclusive,
+    @newOpt,
+    @newPlus,
+    @newSequence,
+    @newStar,
+    @newString,
+    @reverse,
+    @reverseNth,
+    @set,
+    @singleValue,
+    @sliceExclusive,
+    @sliceGeneral,
+    @sliceInclusive,
+    @subclass,
+    @toLogic,
+    @toUnlisted,
+    @value
+];
+
+## Literal values.
+def VALUES = {
+    EMPTY_LIST:         [],
+    EMPTY_MAP:          {},
+    EMPTY_SYMBOL_TABLE: @{},
+    INT_0:              0,
+    INT_1:              1,
+    false:              false,
+    null:               null,
+    true:               true,
+
+    ## Classes
+    Bool,
+    List,
+    Map,
+    Object,
+    Record,
+    SymbolTable
+};
+
+## Class methods.
+def CLASS_METHODS = [
+    @{class: Class, name: @typeAccepts},
+    @{class: Class, name: @typeCast},
+    @{class: Cmp,   name: @eq},
+    @{class: Cmp,   name: @ge},
+    @{class: Cmp,   name: @gt},
+    @{class: Cmp,   name: @le},
+    @{class: Cmp,   name: @lt},
+    @{class: Cmp,   name: @ne},
+    @{class: Cmp,   name: @perEq},
+    @{class: Cmp,   name: @perGe},
+    @{class: Cmp,   name: @perGt},
+    @{class: Cmp,   name: @perLe},
+    @{class: Cmp,   name: @perLt},
+    @{class: Cmp,   name: @perNe},
+    @{class: If,    name: @and},
+    @{class: If,    name: @andThenElse},
+    @{class: If,    name: @cases},
+    @{class: If,    name: @is},
+    @{class: If,    name: @loop},
+    @{class: If,    name: @maybeValue},
+    @{class: If,    name: @not},
+    @{class: If,    name: @or},
+    @{class: If,    name: @value}
+];
+
+## Class methods.
+def INSTANCE_METHODS = [
+    @add,
+    @and,
+    @div,
+    @divEu,
+    @get_size,
+    @mod,
+    @modEu,
+    @mul,
+    @neg,
+    @not,
+    @or,
+    @reverse,
+    @shl,
+    @shr,
+    @sub,
+    @xor
+];
+
+##
+## Exported Definitions
+##
+
+## Documented in spec.
+export fn extractLiteral(node) {
+    return? If.is { node.hasName(@literal) }
+        { node::value }
+};
+
+## Documented in spec.
+export fn makeLiteral(value) {
+    return @literal{value}
+};
+
+## Note: The following constants need to be defined *after* the function
+## `makeLiteral()` gets defined, as these use that.
+
+## Documented in spec.
+export def METHODS = @{}.cat(
+    (CLASS_METHODS.collect { cn ->
+        def cls = cn::class;
+        def name = cn::name;
+        def refKey = cls.get_name().cat(@"_", name);
+        @{(refKey): @methodId{
+            class: makeLiteral(cls),
+            name:  makeLiteral(name)}}
+    })*,
+
+    (INSTANCE_METHODS.collect { name ->
+        @{(name): @methodId{name: makeLiteral(name)}}
+    })*
+);
+
+## Documented in spec.
+export def LITS = @{}.cat(
+    (VALUES.collect { one -> @{one.get_key(): makeLiteral(one.get_value())} })*
+);
+
+## Documented in spec.
+export def SYMS = @{}.cat(
+    (SYMBOLS.collect { name -> @{(name): makeLiteral(name)} })*
+);

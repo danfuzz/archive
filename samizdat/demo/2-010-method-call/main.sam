@@ -1,0 +1,53 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Method call demo
+##
+
+
+##
+## Private Definitions
+##
+
+## Prints out the given value.
+fn msg(value) {
+    note("\%q(value)");
+};
+
+
+##
+## Main Tests
+##
+
+note("Layer 0:\n");
+
+msg([1, 2].get_size());
+msg(["zero", "one", "two"].get(0));
+msg(["zero", "one", "two"].nth(1));
+msg((100).perEq(100));
+
+## Calculated method name.
+def negName = @neg;
+msg((100).(negName)());
+
+## Closure syntax.
+msg([1, 2].collect { x -> x.add(1) });
+
+note("\nLayer 2:\n");
+
+def NEW = @NEW.toUnlisted();
+class Igram
+        new: NEW {
+    .get_foo() {
+        return "a foo"
+    };
+    .set_foo(foo) {
+        note("Set to: \%q(foo)");
+    };
+};
+
+def obj = Igram.(NEW)();
+note(obj.foo);
+obj.foo := "whatevs";

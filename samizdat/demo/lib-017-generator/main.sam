@@ -1,0 +1,132 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Generator function demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import core.Generator :: *;
+
+
+##
+## Private Definitions
+##
+
+## Prints the given value, indented slightly.
+fn msg(value) {
+    note("  ", $Format::source(value))
+};
+
+## Outputs all generated values, with an initial header, followed by
+## the listification of the generator, all followed by an extra newline
+## at the end.
+fn msgAll(header, origGen) {
+    note(header);
+
+    var gen = origGen;
+    If.loopUntil { /out ->
+        def result;
+        If.value { gen.nextValue(result?) }
+            { nextGen ->
+                msg(result);
+                gen := nextGen
+            }
+            { yield /out [] }
+    };
+
+    note("  [all]");
+    msg(origGen.collect());
+    note()
+};
+
+
+##
+## Main Tests
+##
+
+msgAll("Empty list", []);
+msgAll("Empty map", {});
+msgAll("Empty string", "");
+msgAll("NullGenerator", nullGenerator);
+msgAll("Empty ListWrapGenerator", ListWrapGenerator.new([]));
+msgAll("Empty ParaGenerator", ParaGenerator.new());
+msgAll("Empty SerialGenerator", SerialGenerator.new());
+msgAll("Empty RepeatGenerator", RepeatGenerator.new(0));
+msgAll("RepeatGenerator with default value",
+    RepeatGenerator.new(7));
+msgAll("RepeatGenerator with string value",
+    RepeatGenerator.new(3, "blort"));
+
+msgAll("List", [101, 33, 5555, "blort"]);
+msgAll("Map", {one: 1, two: 2, three: 3, four: 4, five: "fizmo"});
+msgAll("String", "Happy string!");
+
+msgAll("ListWrapGenerator", ListWrapGenerator.new("frotz"));
+
+msgAll("Single-item ParaGenerator",
+    ParaGenerator.new(["blort", "igram", "fizmo"]));
+
+msgAll("All-finite ParaGenerator",
+    ParaGenerator.new(
+        [1, 2, 3],
+        "abcdefg",
+        {a: "a!", b: "b!", c: "c!", d: "d!", e: "e!"}));
+
+msgAll("ParaGenerator with opt element and ValueGenerator",
+    ParaGenerator.new(
+        OptGenerator.new([1, 2, 3]),
+        ValueGenerator.new("blort"),
+        "abcdefg",
+        {a: "a!", b: "b!", c: "c!", d: "d!", e: "e!"}));
+
+msgAll("FilterGenerator (square even numbers)",
+    FilterGenerator.new([1, 2, 3, 4, 5, 6, 7, 8, 9])
+        { value ->
+            If.is { Cmp.eq(value.mod(2), 0) }
+                { value.mul(value) }
+        });
+
+note("forEachAll (one generator)");
+var pumped = forEachAll([1, 2, 3, 4])
+    { value ->
+        note("    Yay ", $Format::source(value));
+        If.is { Cmp.le(value, 3) }
+            { value.add(100) }
+    };
+note("Got: ", $Format::source(pumped), "\n");
+
+note("forEachAll (two generators)");
+pumped := forEachAll("abcdefg", [1, 2, 3, 4])
+    { ch, value ->
+        note("    Yay ", ch, " ", $Format::source(value));
+        If.is { Cmp.eq(value, 3) }
+            { value.add(100) }
+    };
+note("Got: ", $Format::source(pumped), "\n");
+
+msgAll("ParaGenerator with open ranges",
+    ParaGenerator.new(
+        $Range::OpenRange.new("a"),
+        $Range::OpenRange.new(100, 10),
+        [1, 2, 3, 4, 5, 6, 7]));
+
+msgAll("Size one SerialGenerator",
+    SerialGenerator.new({a: 10, b: 20, c: 30}));
+
+msgAll("Size two SerialGenerator",
+    SerialGenerator.new(
+        {a: 10, b: 20, c: 30},
+        "defg"));
+
+msgAll("Size six SerialGenerator (with a couple pre-voided generators)",
+    SerialGenerator.new(
+        "abc",
+        [],
+        [],
+        nullGenerator,
+        ["def", "ghi"],
+        []));

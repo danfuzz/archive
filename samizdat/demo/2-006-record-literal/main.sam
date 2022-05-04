@@ -1,0 +1,44 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Record literal demo, Layer 2 specific
+##
+
+
+##
+## Private Definitions
+##
+
+fn msg(v) {
+    note("Got: \%q(v)")
+};
+
+
+##
+## Main Tests
+##
+
+note("Layer 0...");
+
+## These all refer to the same value.
+msg(@potion{});
+msg(@"potion"{});
+msg(@(@potion){});
+
+msg(@"^zorch^"{blortch: "scorch"});
+msg(@fizmo{a: 1, b: 2, c: 3});
+msg(@fizmo{@{a: 1, b: 2, c: 3}*});
+
+## Keywords can be used as types.
+msg(@def{x: 10});
+msg(@fn{z: 100});
+
+## Accessing data via `get` calls, explicitly and implicitly.
+msg(@foo{a: 1, b: 2}.get(@a));
+msg(@foo{a: 1, b: 2}::b);
+
+note("\nLayer 2...");
+
+msg(@"\&mu;sec"{x: 10});

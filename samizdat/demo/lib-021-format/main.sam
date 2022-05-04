@@ -1,0 +1,106 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Format demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+## Checks an expected result.
+fn expect(name, result, func) {
+    If.value { func() }
+        { got ->
+            If.not { Cmp.eq(got, result) }
+                {
+                    note("Unexpected result: ", $Format::source(got));
+                    die("For: ", name);
+                }
+        }
+        {
+            note("Unexpected void result.");
+            die("For: ", name);
+        }
+};
+
+## Checks an expected void result.
+fn expectVoid(name, func) {
+    If.value { func() }
+        { got ->
+            note("Unexpected non-void result: ", $Format::source(got));
+            die("For: ", name)
+        }
+};
+
+## Checks an expected equality.
+fn expectEq(name, v1, v2) {
+    If.not { Cmp.eq(v1, v2) }
+        {
+            note("Unexpected: ", $Format::source(v1), " != ",
+                $Format::source(v2));
+            die("For: ", name)
+        }
+};
+
+## Checks an expected inequality.
+fn expectNe(name, v1, v2) {
+    If.not { Cmp.ne(v1, v2) }
+        {
+            note("Unexpected: ", $Format::source(v1), " == ",
+                $Format::source(v2));
+            die("For: ", name)
+        }
+};
+
+
+##
+## Main demos
+##
+
+note("Formatting.");
+
+expectEq("int 1", "1000111", $Format::int(71, 2));
+expectEq("int 2", "71",      $Format::int(71, 10));
+expectEq("int 3", "47",      $Format::int(71, 16));
+expectEq("int 4", "1z",      $Format::int(71, 36));
+
+expectEq("source 1",  "\"\"",            $Format::source(""));
+expectEq("source 2",  "[]",              $Format::source([]));
+expectEq("source 3",  "{}",              $Format::source({}));
+expectEq("source 4",  "@{}",             $Format::source(@{}));
+expectEq("source 5",  "@blort",          $Format::source(@blort));
+expectEq("source 6",  "\"x\"",           $Format::source("x"));
+expectEq("source 7",  "\"fizmo\\n\"",    $Format::source("fizmo\n"));
+expectEq("source 8",  "123",             $Format::source(123));
+expectEq("source 9",  "@<Builtin note>", $Format::source(note));
+expectEq("source 10", "String",          $Format::source(String));
+
+## This stringifies differently depending on if we're compiled or not. TODO:
+## Ultimately these cases should not be distinguishable.
+def funcStr = $Format::source({ xyz() -> 1 });
+If.or
+    { Cmp.eq(funcStr, "@<Builtin xyz>") }
+    { Cmp.eq(funcStr, "@<Closure xyz>") }
+    { die("Unexpected function string: ", funcStr) };
+
+expectEq("usual 1",  "",      $Format::usual(""));
+expectEq("usual 2",  "",      $Format::usual([]));
+expectEq("usual 3",  "",      $Format::usual([""]));
+expectEq("usual 4",  "",      $Format::usual([[[[[]]]]]));
+expectEq("usual 5",  "blort", $Format::usual("blort"));
+expectEq("usual 6",  "blort", $Format::usual(["blort"]));
+expectEq("usual 7",  "blort", $Format::usual([["blort"]]));
+expectEq("usual 8",  "blort", $Format::usual(["b", "lor", "t"]));
+expectEq("usual 9",  "blort", $Format::usual(["b", ["lor"], "t"]));
+expectEq("usual 10", "blort", $Format::usual(["b", ["l", "or"], ["t"]]));
+expectEq("usual 11", "blort", $Format::usual([["b"], ["l", ["or"]], ["t"]]));
+expectEq("usual 12", "1{}@x", $Format::usual([[1], [[{}]], [[[@x]]]]));
+
+note("All good.");

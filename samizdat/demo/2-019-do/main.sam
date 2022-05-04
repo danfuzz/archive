@@ -1,0 +1,44 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Loop expression demo
+##
+
+
+##
+## Main Tests
+##
+
+var v = 0;
+
+do {
+    v := v + 1;
+    if (v == 5) {
+        break
+    };
+    note("Value is \%q(v).")
+};
+
+do { /next ->
+    v := v + 1;
+    if (v == 10) {
+        continue
+    } else if (v == 12) {
+        yield /next
+    } else if (v == 15) {
+        break
+    };
+    note("Value is \%q(v).")
+};
+
+def result = do /out {
+    v := v + 1;
+    if (v == 20) {
+        yield /out "igram"
+    };
+    note("Value is \%q(v).")
+};
+
+note("Result is \%q(result).");

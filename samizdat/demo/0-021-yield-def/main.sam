@@ -1,0 +1,56 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Yield def demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Main Tests
+##
+
+def x = { /outx ->
+    yield /outx "Hello"
+}();
+
+note(x);
+
+def y = { arg /outx ->
+    yield /outx arg
+}("and");
+
+note(y);
+
+def z = { /stuff ->
+    If.value { "also" }
+        { value -> yield /stuff value }
+}();
+
+note(z);
+
+fn foo() { /blort ->
+    yield /blort "goodbye"
+};
+
+note(foo());
+
+fn bar(arg) { /blort ->
+    yield /blort arg
+};
+
+note(bar("to"));
+
+fn baz(foo) { /out ->
+    If.is { Cmp.eq(foo, 1) }
+        { yield /out "you" }
+        { yield /out }
+};
+
+note(baz(1));
+If.not { baz(2) }
+    { note("too!"); };

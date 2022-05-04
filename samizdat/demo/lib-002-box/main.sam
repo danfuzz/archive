@@ -1,0 +1,105 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Box demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+## Prints box info.
+fn msg(box) {
+    def str = If.value { box.fetch() }
+        { value -> $Format::source(value) }
+        { "(void)" };
+
+    note("Fetched: ", str)
+};
+
+## Prints box info using interpolation.
+fn msgInterp(box) {
+    def str = If.value { box* }
+        { value -> $Format::source(value) }
+        { "(void)" };
+
+    note("Interpolated: ", str)
+};
+
+
+##
+## Main demos
+##
+
+note("Cell");
+
+def box1 = Cell.new();
+msg(box1);
+box1.store();
+msg(box1);
+box1.store("Hi");
+msg(box1);
+box1.store("there!");
+msg(box1);
+box1.store();
+msg(box1);
+
+note("\nCell, pre-set");
+
+def box2 = Cell.new("blort");
+msg(box2);
+box2.store();
+msg(box2);
+box2.store("igram");
+msg(box2);
+
+note("\nPromise");
+
+def box3 = Promise.new();
+msg(box3);
+box3.store("fizmo");
+msg(box3);
+
+note("\nResult, void");
+
+def box4 = Result.new();
+msg(box4);
+
+note("\nResult, value");
+
+def box5 = Result.new("blort");
+msg(box5);
+
+note("\nLazy, void");
+
+def box6 = Lazy.new { note("Lazy called!") };
+msg(box6);
+msg(box6);
+
+note("\nLazy, value");
+
+def box7 = Lazy.new { note("Lazy called!"); "frotz" };
+msg(box7);
+msg(box7);
+
+note("\nnullBox");
+
+msg(nullBox);
+nullBox.store("stuff");
+msg(nullBox);
+
+note("\nvoidResult");
+
+msg(voidResult);
+
+note("\nInterpolation");
+
+msgInterp(nullBox);
+msgInterp(Cell.new());
+msgInterp(Cell.new("blort"));

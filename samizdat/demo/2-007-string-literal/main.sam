@@ -1,0 +1,50 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## String literal demo, Layer 2 specific
+##
+
+
+##
+## Private Definitions
+##
+
+fn msg(string) {
+    note("Got: \%q(string)")
+};
+
+
+##
+## Main Tests
+##
+
+note("Layer 0...");
+
+msg("");
+msg("a");
+msg("fizmo");
+msg("\0");
+msg("\n");
+msg("\r");
+msg("\t");
+msg("\"");
+msg("\\");
+
+note("\nLayer 1...");
+
+msg("A couple
+     of lines.");
+
+note("\nLayer 2...");
+
+msg("\x0;");
+msg("Hello \x46,75,7a,7a; and \&#70,#117,#x7a,#x7a;");
+msg("\x1_F60F;");
+msg("\&zigrarr;");
+msg("\&mu,nu;");
+msg("\
+    * A couple
+  \/  of lines.
+    ");

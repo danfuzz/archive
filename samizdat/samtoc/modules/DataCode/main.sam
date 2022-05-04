@@ -1,0 +1,241 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Convert data into C code that constructs that data.
+##
+
+import CodeGen :: *;
+
+
+##
+## Private Definitions
+##
+
+## Representation of a C `NULL`.
+def CODE_C_NULL = CodeString.new("NULL");
+
+## Values with special conversions.
+def SPECIAL_VALUES = {
+    (Bool):        CodeString.new("CLS_Bool"),
+    (Box):         CodeString.new("CLS_Box"),
+    (Cell):        CodeString.new("CLS_Cell"),
+    (Class):       CodeString.new("CLS_Class"),
+    (Cmp):         CodeString.new("CLS_Cmp"),
+    (Core):        CodeString.new("CLS_Core"),
+    (If):          CodeString.new("CLS_If"),
+    (Int):         CodeString.new("CLS_Int"),
+    (Lazy):        CodeString.new("CLS_Lazy"),
+    (List):        CodeString.new("CLS_List"),
+    (Map):         CodeString.new("CLS_Map"),
+    (Metaclass):   CodeString.new("CLS_Metaclass"),
+    (Null):        CodeString.new("CLS_Null"),
+    (NullBox):     CodeString.new("CLS_NullBox"),
+    (Object):      CodeString.new("CLS_Object"),
+    (Promise):     CodeString.new("CLS_Promise"),
+    (Record):      CodeString.new("CLS_Record"),
+    (Result):      CodeString.new("CLS_Result"),
+    (String):      CodeString.new("CLS_String"),
+    (Symbol):      CodeString.new("CLS_Symbol"),
+    (SymbolTable): CodeString.new("CLS_SymbolTable"),
+    (Value):       CodeString.new("CLS_Value"),
+    (false):       CodeString.new("BOOL_FALSE"),
+    (true):        CodeString.new("BOOL_TRUE"),
+    (null):        CodeString.new("THE_NULL"),
+    (nullBox):     CodeString.new("THE_NULL_BOX"),
+    []:            CodeString.new("EMPTY_LIST"),
+    {}:            CodeString.new("EMPTY_MAP"),
+    @{}:           CodeString.new("EMPTY_SYMBOL_TABLE"),
+    "":            CodeString.new("EMPTY_STRING"),
+    0:             CodeString.new("INT_0"),
+    1:             CodeString.new("INT_1"),
+    -1:            CodeString.new("INT_NEG1")
+};
+
+## Encode the given values as a list of C-style `\xNN` escapes.
+fn hexEscape(values*) {
+    return [ value in values ->
+        def digit1 = (value >>> 4) &&& 0x0f;
+        def digit2 =  value        &&& 0x0f;
+        "\\x\%x(digit1)\%x(digit2)"
+    ]
+};
+
+## UTF-8 encode the given character, returning a representation as a list of
+## C-style `\xNN` escapes.
+fn utf8Char(ch) {
+    def value = ch as Int;
+
+    return if (value < 0) {
+        die("Out of range for UTF-8 encoding: 0x\%x(value)");
+    } else if (value < 0x80) {
+        hexEscape(value)
+    } else if (value < 0x800) {
+        def x0 = 0xc0 |||  (value >>> 6)           ;
+        def x1 = 0x80 ||| ( value         &&& 0x3f);
+        hexEscape(x0, x1)
+    } else if (value < 0x1_0000) {
+        def x0 = 0xe0 |||  (value >>> 12)          ;
+        def x1 = 0x80 ||| ((value >>> 6)  &&& 0x3f);
+        def x2 = 0x80 ||| ( value         &&& 0x3f);
+        hexEscape(x0, x1, x2)
+    } else if (value < 0x20_0000) {
+        def x0 = 0xf0 |||  (value >>> 18)          ;
+        def x1 = 0x80 ||| ((value >>> 12) &&& 0x3f);
+        def x2 = 0x80 ||| ((value >>> 6)  &&& 0x3f);
+        def x3 = 0x80 ||| ( value         &&& 0x3f);
+        hexEscape(x0, x1, x2, x3)
+    } else if (value < 0x400_0000) {
+        def x0 = 0xf8 |||  (value >>> 24)          ;
+        def x1 = 0x80 ||| ((value >>> 18) &&& 0x3f);
+        def x2 = 0x80 ||| ((value >>> 12) &&& 0x3f);
+        def x3 = 0x80 ||| ((value >>> 6)  &&& 0x3f);
+        def x4 = 0x80 ||| ( value         &&& 0x3f);
+        hexEscape(x0, x1, x2, x3, x4)
+    } else if (value < 0x8000_0000) {
+        def x0 = 0xfc |||  (value >>> 30)          ;
+        def x1 = 0x80 ||| ((value >>> 24) &&& 0x3f);
+        def x2 = 0x80 ||| ((value >>> 18) &&& 0x3f);
+        def x3 = 0x80 ||| ((value >>> 12) &&& 0x3f);
+        def x4 = 0x80 ||| ((value >>> 6)  &&& 0x3f);
+        def x5 = 0x80 ||| ( value         &&& 0x3f);
+        hexEscape(x0, x1, x2, x3, x4, x5)
+    } else if (value < 0x1_0000_0000) {
+        def x0 = 0xfe                              ;
+        def x1 = 0x80 ||| ((value >>> 30) &&& 0x3f);
+        def x2 = 0x80 ||| ((value >>> 24) &&& 0x3f);
+        def x3 = 0x80 ||| ((value >>> 18) &&& 0x3f);
+        def x4 = 0x80 ||| ((value >>> 12) &&& 0x3f);
+        def x5 = 0x80 ||| ((value >>> 6)  &&& 0x3f);
+        def x6 = 0x80 ||| ( value         &&& 0x3f);
+        hexEscape(x0, x1, x2, x3, x4, x5, x6)
+    } else {
+        die("Out of range for UTF-8: 0x\%x(value)");
+    }
+};
+
+## Map of special-case characters to either their stringified forms or
+## to `"x"` to indicate a need to convert as hex.
+def SPECIAL_CHARS = {
+    ("\x1;".."\x1f;")*: "x",
+    ("\x7f;"):          "x",
+    ("\0"):             "\\0",
+    ("\n"):             "\\n",
+    ("\r"):             "\\r",
+    ("\t"):             "\\t",
+    ("\""):             "\\\"",
+    ("\\"):             "\\\\"
+};
+
+## Helper for converting strings: Returns the converted form of the
+## given character as a list of single-character forms in C syntax.
+fn stringChar(ch) {
+    if (ch > "\x7f;") {
+        return utf8Char(ch)
+    } else if (def special = SPECIAL_CHARS[ch]) {
+        if (special == "x") {
+            return hexEscape(ch as Int)
+        } else {
+            return [special]
+        }
+    };
+
+    return [ch]
+};
+
+
+##
+## Exported definitions
+##
+
+## Converts an int.
+fn Int_convert(value) {
+    return Call.new("intFromZint", "\(value)")
+};
+
+## Converts a list.
+fn List_convert(value) {
+    def listElems = [ elem in value -> convert(elem) ];
+    return MethCall.new("CLS_List", "SYM(new)", listElems*)
+};
+
+## Converts a map.
+fn Map_convert(value) {
+    def mapPairs = [ mapping in value ->
+        [convert(mapping.key), convert(mapping.value)]
+    ];
+
+    return MethCall.new("CLS_Map", "SYM(new)", [].cat(mapPairs*)*)
+};
+
+## Converts a record.
+fn Record_convert(value) {
+    def dataConv = ((value.data != @{}) & convert(value.data))?;
+    return MethCall.new("CLS_Record", "SYM(new)",
+        convert(value.name), dataConv*)
+};
+
+## Converts a string.
+fn String_convert(value) {
+    ## Each `stringChar()` call returns a list (each list element representing
+    ## one byte), and we have to interpolate+concatenate them all together in
+    ## order to find the encoded length.
+    def bodyChars = [].cat([ ch in value -> stringChar(ch) ]*);
+
+    return Call.new("stringFromUtf8",
+        "\(#bodyChars)", "\"\(bodyChars)\"")
+};
+
+## Converts a symbol.
+fn Symbol_convert(value) {
+    if (!value.isInterned()) {
+        die("Cannot convert unlisted symbol: \%q(value)")
+    };
+
+    ## See comment in `String_convert`.
+    def name = value as String;
+    def bodyChars = [].cat([ ch in name -> stringChar(ch) ]*);
+
+    return Call.new("symbolFromUtf8", "\(#bodyChars)", "\"\(bodyChars)\"")
+};
+
+
+## Converts a symbol table.
+fn SymbolTable_convert(value) {
+    ## Convert to a map, and process the result similar to how map conversion
+    ## works.
+
+    def map = value as Map;
+    def mapPairs = [ mapping in map ->
+        [convert(mapping.key), convert(mapping.value)]
+    ];
+
+    return MethCall.new("CLS_SymbolTable", "SYM(new)", [].cat(mapPairs*)*)
+};
+
+## Converts an opaque value. Or rather, always complains that it can't
+## actually do that.
+fn Value_convert(value) {
+    die("Cannot convert value: \%q(value)")
+};
+
+## Converts a value into C code to construct that value. This function
+## returns a tree that can be stringified with `indent()`.
+export fn convert(value) {
+    return if (def special = SPECIAL_VALUES[value]) {
+        special
+    } else {
+        switch (Class.of(value)) {
+            (Class):       { Class_convert(value)       };
+            (Int):         { Int_convert(value)         };
+            (List):        { List_convert(value)        };
+            (Map):         { Map_convert(value)         };
+            (Record):      { Record_convert(value)      };
+            (String):      { String_convert(value)      };
+            (Symbol):      { Symbol_convert(value)      };
+            (SymbolTable): { SymbolTable_convert(value) };
+            default:       { Value_convert(value)       }
+        }
+    }
+};

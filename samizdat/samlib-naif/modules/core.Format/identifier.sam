@@ -1,0 +1,44 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Identifier utilities
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+## These are all the characters which are allowed to start an identifier.
+def IDENTIFIER_STARTS = {
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"*: true
+};
+
+## These are all the characters which are allowed to be in an identifier.
+def IDENTIFIER_CHARS = {
+    IDENTIFIER_STARTS*,
+    "0123456789"*: true
+};
+
+## Checks to see if the given value is a symbol with the form of an
+## in-language identifier. Returns the given `symbol` if so.
+export fn isIdentifier(symbol) {
+    If.not { Symbol.accepts(symbol) }
+        { return };
+
+    def string = Class.typeCast(String, symbol);
+
+    If.is { Cmp.eq(string, "") }
+        { return };
+
+    If.not { IDENTIFIER_STARTS.get(string.nth(0)) }
+        { return };
+
+    string.forEach { ch ->
+        If.not { IDENTIFIER_CHARS.get(ch) }
+            { return }
+    };
+
+    return symbol
+};

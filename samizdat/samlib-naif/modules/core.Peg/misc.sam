@@ -1,0 +1,43 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## PEG (Parsing Expression Grammar) support
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import ./BasicState :: *;
+
+
+##
+## Exported Definitions
+##
+
+## Documented in spec.
+export fn apply(rule, input) {
+    def tokens = If.is { String.accepts(input) }
+        {
+            ## This converts generated characters into tokens with the
+            ## characters as the record name.
+            input.collect { ch -> @(Class.typeCast(Symbol, ch)){} }
+        }
+        { input };
+
+    def state = BasicState.new(tokens);
+
+    return? If.value { state.applyRule(rule) }
+        { result -> result.get_context()* }
+};
+
+## Documented in spec.
+export fn stringFromTokenList(tokens) {
+    return "".cat((tokens.collect { t -> t.get_name() })*)
+};
+
+## Documented in spec.
+export fn symbolFromTokenList(tokens) {
+    return @"".cat((tokens.collect { t -> t.get_name() })*)
+};

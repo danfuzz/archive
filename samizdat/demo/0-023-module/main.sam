@@ -1,0 +1,43 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Throwaway demo of module mechanism
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Main Tests
+##
+
+## A known module (shouldn't cause any trouble).
+import core.Format;
+
+## A locally-defined (but still "external") module.
+import app.Stuff;
+
+## Ensure it's not re-evaluated (see below).
+import $Stuff2 = app.Stuff;
+
+## A resource file.
+import @utf8 ./resource.txt;
+
+## Check modules.
+If.is { Cmp.ne($Stuff, $Stuff2) }
+    { die("Different modules!") };
+
+export fn main(selfPath, .*) {
+    note("I am: ", $Format::source(selfPath));
+    note($Format::source($Stuff::STUFF));
+    note($Format::source($Stuff::SUBSTUFF));
+    note($Format::source($Stuff::$reexport));
+    note($Format::source($Stuff::reBind1));
+    note($Format::source($Stuff::reBind2));
+    note($Format::source($Stuff::stuffFunc1()));
+    note($Format::source($Stuff::stuffFunc2()));
+    note($Format::source($resource));
+};

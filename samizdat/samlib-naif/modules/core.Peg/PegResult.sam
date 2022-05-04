@@ -1,0 +1,42 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `PegResult` class
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Class Definition
+##
+## Payload: {value: .}
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class PegResult
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    class.new(value) {
+        return this.(NEW)(@{value})
+    };
+
+    ## Documented in spec.
+    .parse(state) {
+        return state.addContext(this.(ACCESS)(@value))
+    };
+};
+
+
+##
+## Exported Definitions
+##
+
+## Documented in spec.
+export def empty = Result.new(null);

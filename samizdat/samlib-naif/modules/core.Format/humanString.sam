@@ -1,0 +1,31 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `humanString`
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import ./sourceGeneral :: sourceGeneral;
+
+
+## Function for producing a human-oriented string of the argument.
+export fn humanString(value) {
+    return If.cases(
+        { Class.of(value) },
+        {
+            (List): { . ->
+                def elems = value.collect(humanString);
+                "".cat(elems*)
+            },
+
+            (String): { . ->
+                value
+            }
+        },
+        { . -> sourceGeneral(value, true) }
+    )
+};

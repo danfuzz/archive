@@ -1,0 +1,49 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `PegLookaheadFailure` class
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import ./PegAny :: any;
+import ./PegEof :: eof;
+import ./PegFail :: fail;
+import ./PegResult :: empty;
+
+
+##
+## Class Definition
+##
+## Payload: {rule: rule}
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class PegLookaheadFailure
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    class.new(rule) {
+        ## Optimiziation: Representation of `!.`.
+        If.is { Cmp.eq(rule, any) }
+            { return eof };
+
+        ## Optimization: Representation of `!()`.
+        If.is { Cmp.eq(rule, empty) }
+            { return fail };
+
+        ## The general case.
+        return this.(NEW)(@{rule})
+    };
+
+    ## Documented in spec.
+    .parse(state) {
+        return? If.not { state.applyRule(this.(ACCESS)(@rule)) }
+            { state.addContext(null) }
+    };
+};

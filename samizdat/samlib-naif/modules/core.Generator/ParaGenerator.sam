@@ -1,0 +1,82 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `ParaGenerator` Class
+##
+## Payload is `{generators: [gens*]}`, a list of sub-generators.
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import ./ListWrapGenerator :: *;
+import ./NullGenerator :: nullGenerator;
+
+
+##
+## Class Definition
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class ParaGenerator
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    class.new(generators*) {
+        ## Return the `nullGenerator` if we weren't passed any arguments.
+        If.is { Cmp.eq(generators, []) }
+            { return nullGenerator };
+
+        ## Return a `ListWrapGenerator` if we were only passed one argument.
+        ## This saves some overhead.
+        If.is { Cmp.eq(generators.get_size(), 1) }
+            { return ListWrapGenerator.new(generators*) };
+
+        return this.(NEW)(@{generators})
+    };
+
+    ## Documented in spec.
+    .collect(optFilterFunction?) {
+        ## Just use the standard implementation.
+        return Generator_stdCollect(this, optFilterFunction*)
+    };
+
+    ## Documented in spec.
+    .fetch() {
+        ## Just use the standard implementation.
+        return Generator_stdFetch(this)
+    };
+
+    ## Documented in spec.
+    .forEach(optFilterFunction?) {
+        ## Just use the standard implementation.
+        return? Generator_stdForEach(this, optFilterFunction*)
+    };
+
+    ## Documented in spec.
+    .nextValue(box) {
+        def subGens = this.(ACCESS)(@generators);
+        var yields = [];
+        var result;
+
+        def nexts = subGens.collect
+            { gen ->
+                If.value { gen.nextValue(result?) }
+                    { nextGen ->
+                        yields := [yields*, result];
+                        nextGen
+                    }
+                    {
+                        ## This sub-generator became voided.
+                        return
+                    }
+            };
+
+        box* := yields;
+        return this.(NEW)(@{generators: nexts})
+    };
+};

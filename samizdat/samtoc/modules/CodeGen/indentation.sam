@@ -1,0 +1,14 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Indentation helper.
+##
+
+##
+## Exported Definitions
+##
+
+## List of indentation prefixes (index is level of indentation).
+export def INDENTATION = [ n in (0..200) -> "  ".repeat(n) ];

@@ -1,0 +1,55 @@
+// GENERATED CODE!
+// GENERATED CODE!
+// GENERATED CODE!
+//
+// This code *might* be derived from a copyrighted source. Proceed with
+// caution!
+
+#include "type/Bool.h"
+#include "type/Class.h"
+#include "type/Cmp.h"
+#include "type/If.h"
+#include "type/Int.h"
+#include "type/List.h"
+#include "type/Map.h"
+#include "type/Null.h"
+#include "type/Object.h"
+#include "type/Record.h"
+#include "type/String.h"
+#include "type/Symbol.h"
+#include "type/SymbolTable.h"
+#include "util.h"
+
+static zvalue programTree(void) {
+  return
+\(source);
+}
+
+static zvalue lookup(zvalue env, const char *name) {
+    return cm_get(env, symbolFromUtf8(-1, name));
+}
+
+static zvalue externalSource(const char *name) {
+    return cm_new(Record, symbolFromUtf8(-1, "external"),
+        cm_new(SymbolTable,
+            symbolFromUtf8(-1, "name"), stringFromUtf8(-1, name)));
+}
+
+zvalue eval(zvalue env) {
+    zvalue evalFn = lookup(env, "Code_eval");
+
+    if (evalFn == NULL) {
+        zvalue loadModule = lookup(env, "loadModule");
+        if (loadModule == NULL) {
+            die("Binding missing: loadModule or Code_eval");
+        }
+
+        zvalue langModule = FUN_CALL(loadModule, externalSource("core.Code"));
+        evalFn = lookup(langModule, "eval");
+        if (evalFn == NULL) {
+            die("Binding missing: core.Code::eval");
+        }
+    }
+
+    return FUN_CALL(evalFn, env, programTree());
+}

@@ -1,0 +1,105 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+import core.LangNode :: *;
+
+import VarCalc :: get_varRefs;
+
+
+
+##
+## Private Definitions
+##
+
+## Does one layer of body collection.
+fn bodies(node, bodiesBox) {
+    return switch (def nodeName = node.name) {
+        @apply: {
+            def target = bodies(node::target, bodiesBox);
+            def name = bodies(node::name, bodiesBox);
+            def values = bodies(node::values, bodiesBox);
+
+            @apply{target, name, values}
+        };
+
+        @call: {
+            def target = bodies(node::target, bodiesBox);
+            def name = bodies(node::name, bodiesBox);
+            def values = [ a in node::values -> bodies(a, bodiesBox) ];
+            @call{target, name, values}
+        };
+
+        @closure: {
+            def statements = [ s in node::statements -> bodies(s, bodiesBox) ];
+            def yieldNode = bodies(node::yield, bodiesBox);
+            def varRefs = get_varRefs(node);
+            def newNode = @closure{
+                node*, statements, varRefs, yield: yieldNode};
+
+            def bodies = bodiesBox*;
+            if (def already = bodies[newNode]) {
+                return already
+            };
+
+            def result = @closureRef{id: #bodies, varRefs};
+            bodiesBox* := {bodies*, (newNode): result};
+            result
+        };
+
+        @fetch: {
+            def target = bodies(node::target, bodiesBox);
+            @fetch{target}
+        };
+
+        @store: {
+            def target = bodies(node::target, bodiesBox);
+            def value = bodies(node::value, bodiesBox);
+            @store{target, value}
+        };
+
+        @varDef: {
+            @varDef{node*, value: bodies(node::value, bodiesBox)}
+        };
+
+        @export:
+        @maybe:
+        @noYield: {
+            def value = bodies(node::value, bodiesBox);
+            @(nodeName){value}
+        };
+
+        @exportSelection:
+        @importModule:
+        @importModuleSelection:
+        @importResource:
+        @literalRef:
+        @varRef:
+        @void: {
+            node
+        }
+    }
+};
+
+
+##
+## Exported Definitions
+##
+
+## Collects all closure nodes at or under the given one into a list.
+## Returns `{closures, node}`, where `closures` is a list of collected
+## closures and `node` is a replacement for the original argument, in which
+## `closure` nodes have been replaced by indexed closure references.
+export fn collectClosures(node) {
+    var bodiesMap = {};
+    def newNode = bodies(node, bodiesMap?);
+
+    def bodiesBoxList = [ for #bodiesMap -> def result; result? ];
+    for (body in bodiesMap) {
+        def index = body.value::id;
+        bodiesBoxList[index]* := body.key
+    };
+    def closures = [ box in bodiesBoxList -> box* ];
+
+    return { closures, node: newNode }
+};

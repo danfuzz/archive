@@ -1,0 +1,80 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Comprehension syntax demo
+##
+
+
+##
+## Private Definitions
+##
+
+## Prints generator or collection output.
+fn msg(header, gen) {
+    note(header);
+    for (item in gen) {
+        note("  \%q(item)")
+    };
+    note()
+};
+
+
+##
+## Main Tests
+##
+
+note("Concise Forms\n");
+
+msg("One-item generator",
+    ( x in ["a", "b", "c"] -> "~~\(x)~~" ));
+
+msg("Two-item generator",
+    ( foo in (1..10), bar in (100.. by 100) -> foo + bar ));
+
+msg("Simple repeat count generator",
+    ( for 10 -> "Woo!" ));
+
+msg("One-item collect",
+    [ x in ["a", "b", "c"] -> "~~\(x)~~" ]);
+
+msg("Two-item collect",
+    [ foo in (1..10), bar in (100.. by 100) -> foo + bar ]);
+
+msg("Simple repeat count collect",
+    [ for 10 -> "Woo!" ]);
+
+msg("Size-limited collect",
+    [ x in (0..), for 7 -> x ]);
+
+note("Extended forms\n");
+
+msg("One-item generator",
+    ( x in ["a", "b", "c"] ->
+        "~~\(x)~~"
+    ));
+
+msg("Two-item multi-line generator",
+    ( foo in (1..10), bar in (100.. by 100) ->
+        def result = foo + bar;
+        result
+    ));
+
+msg("One-item collect",
+    [ x in ["a", "b", "c"] ->
+        "~~\(x)~~"
+    ]);
+
+msg("Two-item multi-line collect",
+    [ foo in (1..10), bar in (100.. by 100) ->
+        def result = foo + bar;
+        result
+    ]);
+
+msg("Three-item multi-line collect",
+    [ a in (0..4), b in (50..90 by 10), c in (300..700 by 100) ->
+        def sum = a + b + c;
+        def evenOdd = ((sum % 2) \== 0) & "Even" | "Odd";
+        "\(evenOdd)\(sum)"
+    ]);

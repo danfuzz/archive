@@ -1,0 +1,92 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `PegRepeat` class
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Class Definition
+##
+## Payload: {rule: rule, maxSize?: int, minSize: int}
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class PegRepeat
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    class.new(rule, minSize, optMaxSize?) {
+        def maxMap = If.value { optMaxSize* }
+            { sz ->
+                If.is { Cmp.lt(sz, minSize) }
+                    { die("Invalid repeat spec: maxSize < minSize") };
+                If.is { Cmp.lt(sz, 1) }
+                    { die("Invalid repeat spec: maxSize < 1") };
+                @{maxSize: sz}
+            }
+            { @{} };
+        return this.(NEW)(@{maxMap*, minSize, rule})
+    };
+
+    ## Documented in spec.
+    class.newOpt(rule) {
+        return this.(NEW)(@{rule, minSize: 0, maxSize: 1})
+    };
+
+    ## Documented in spec.
+    class.newPlus(rule) {
+        return this.(NEW)(@{rule, minSize: 1})
+    };
+
+    ## Documented in spec.
+    class.newStar(rule) {
+        return this.(NEW)(@{rule, minSize: 0})
+    };
+
+    ## Documented in spec.
+    .parse(state) {
+        def rule = this.(ACCESS)(@rule);
+        def origContext = state.get_context();
+        var remainingState = state;
+        var results = [];
+
+        def maxCheck = If.value { this.(ACCESS)(@maxSize) }
+            { maxSize ->
+                {
+                    If.is { results.get_size().crossEq(maxSize) }
+                        {
+                            ## We parsed the max repeat size. Return it.
+                            return remainingState.addContext(results)
+                        }
+                }
+            }
+            { {->} };
+
+        If.loop {
+            If.value { remainingState.applyRule(rule) }
+                { newState ->
+                    ## Successfully parsed the inner rule. Extract the result,
+                    ## and reset the context.
+                    results :=
+                        [results*, newState.get_context().reverseNth(0)];
+                    remainingState := newState.withContext(origContext);
+                    maxCheck()
+                }
+                {
+                    ## Failed to parse the inner rule. Check for minimum match
+                    ## count. Store result and return success if appropriate.
+                    return? If.is
+                        { Cmp.ge(results.get_size(), this.(ACCESS)(@minSize)) }
+                        { remainingState.addContext(results) }
+                }
+        }
+    };
+};

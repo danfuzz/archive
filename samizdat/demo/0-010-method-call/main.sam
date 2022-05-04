@@ -1,0 +1,39 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Method call demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+## Prints out the given value.
+fn msg(value) {
+    note($Format::source(value));
+};
+
+
+##
+## Main Tests
+##
+
+note("Layer 0:\n");
+
+msg([1, 2].get_size());
+msg(["zero", "one", "two"].get(0));
+msg(["zero", "one", "two"].nth(1));
+msg((100).perEq(100));
+
+## Calculated method name.
+def negName = @neg;
+msg((100).(negName)());
+
+## Closure syntax.
+msg([1, 2].collect { x -> x.add(1) });

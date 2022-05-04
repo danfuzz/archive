@@ -1,0 +1,172 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang1
+
+import core.Format;
+import core.LangNode :: *;
+
+
+##
+## Private Definitions
+##
+
+## Int value of Unicode code point `0`.
+def CHAR_0 = Class.typeCast(Int, "0");
+
+## Parses and returns a base-10 unsigned int, or returns void if the string
+## doesn't represent such a number.
+fn intOrVoid(string) {
+    var value = 0;
+
+    string.forEach { ch ->
+        If.is { Cmp.perLt(ch, "0") } { return };
+        If.is { Cmp.perGt(ch, "9") } { return };
+        def digit = Class.typeCast(Int, ch).sub(CHAR_0);
+        value := value.mul(10).add(digit);
+    };
+
+    return value
+};
+
+## Returns the maximum of the given values. Returns `-1` if given no values,
+## and never returns a value less than `-1`.
+fn maxOf(values*) {
+    var max = -1;
+
+    values.forEach { v ->
+        If.is { Cmp.perGt(v, max) }
+            { max := v }
+    };
+
+    return max
+};
+
+## Returns a safe index for the given `baseStr` that is safe with respect
+## to all the other given `names`.
+fn safeIndexForNames(baseStr, names*) {
+    def baseSz = baseStr.get_size();
+
+    def indexes = names.collect { name /next ->
+        def nameStr = Class.typeCast(String, name);
+        If.is { Cmp.perLt(nameStr.get_size(), baseSz) }
+            {
+                ## Can't possibly be a prefix, so no conflict.
+                yield /next
+            };
+        If.is { Cmp.eq(baseStr, nameStr) } { yield /next -1 };
+        If.is { Cmp.eq(baseStr, nameStr.sliceExclusive(0, baseSz)) }
+            { yield? /next intOrVoid(nameStr.sliceInclusive(baseSz)) }
+    };
+
+    return If.is { Cmp.eq(indexes, []) }
+        { -1 }
+        { maxOf(indexes*).add(1) }
+};
+
+## Maps / reduces `safeIndex` over the given nodes.
+fn safeIndexForNodes(baseStr, nodes*) {
+    def indexes = nodes.collect { node -> safeIndex(node, baseStr) };
+    return maxOf(indexes*)
+};
+
+## Returns a safe (unused) index for the given `baseStr` variable name, with
+## regard to the contents of `node`.
+fn safeIndex(node, baseStr) {
+    return If.cases(
+        { node.get_name() },
+        @{
+            @apply: { . ->
+                safeIndexForNodes(baseStr,
+                    node::target, node::name, node::values);
+            },
+
+            @call: { . ->
+                safeIndexForNodes(baseStr,
+                    node::target, node::name, node::values*);
+            },
+
+            @closure: { . ->
+                def namesIndex =
+                    safeIndexForNames(baseStr, node::name?*, node::yieldDef?*);
+                def nodesIndex =
+                    safeIndexForNodes(baseStr, node::statements*, node::yield);
+
+                maxOf(namesIndex, nodesIndex)
+            },
+
+            @exportSelection: { . ->
+                safeIndexForNames(baseStr, node::select*)
+            },
+
+            @fetch: { . ->
+                safeIndexForNodes(baseStr, node::target)
+            },
+
+            @importModuleSelection: { . ->
+                ## I don't think this can come up in practice (nor the other
+                ## `import*` variants, really). So, just fail hard. Note: The
+                ## only situation this can't actually be made to work is on
+                ## wildcard imports (since when this is called, we don't
+                ## necessarily know the full set of exports from a module).
+                die("Cannot perform `safeIndex` on `importModuleSelection` ",
+                    "node.")
+            },
+
+            @store: { . ->
+                safeIndexForNodes(baseStr, node::target, node::value)
+            },
+
+            @literal:
+            @void: { . ->
+                -1
+            },
+
+            @varDef: { . ->
+                def nameIndex = safeIndexForNames(baseStr, node::name);
+                def valueIndex = safeIndexForNodes(baseStr, node::value);
+                maxOf(nameIndex, valueIndex)
+            },
+
+            @export:
+            @maybe:
+            @noYield: { . ->
+                safeIndexForNodes(baseStr, node::value)
+            },
+
+            @importModule:
+            @importResource:
+            @varRef: { . ->
+                safeIndexForNames(baseStr, node::name);
+            }
+        })
+};
+
+
+##
+## Exported Definitions
+##
+
+## Makes a variable name by combining `baseStr` with `index`. Handles the case
+## where `index` is `-1` consistently with the other functions exported here.
+export fn makeVarName(baseStr, index) {
+    return If.is { Cmp.eq(index, -1) }
+        { Class.typeCast(Symbol, baseStr) }
+        { Class.typeCast(Symbol, baseStr.cat($Format::int(index))) }
+};
+
+## Returns an unused variable name within `node`, either the given `baseStr` or
+## `baseStr` suffixed with an unsigned int.
+export fn safeVarName(baseStr, node) {
+    return makeVarName(baseStr, safeIndex(node, baseStr))
+};
+
+## Returns a safe index to be used within `node` to suffix the given `baseStr`
+## variable name. Returns `-1` if `baseStr` itself is unused. Any index at or
+## after the return value is safe to use.
+export fn safeVarIndex(baseStr, node) {
+    ## NB: This call has the opposite argument order to the exported function.
+    return safeIndex(node, baseStr)
+};

@@ -1,0 +1,53 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `PegMain` class
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import ./PegChoice :: *;
+import ./PegSequence :: *;
+
+
+##
+## Class Definition
+##
+## Payload: {rule: rule}
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class PegMain
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    class.new(rule) {
+        return this.(NEW)(@{rule})
+    };
+
+    ## Documented in spec.
+    class.newChoice(rules*) {
+        return PegMain.new(PegChoice.new(rules*))
+    };
+
+    ## Documented in spec.
+    class.newSequence(rules*) {
+        return PegMain.new(PegSequence.new(rules*))
+    };
+
+    ## Documented in spec.
+    .parse(state) {
+        ## The point of this class is to drop the context.
+        def origContext = state.get_context();
+        return? If.value
+            { state.withContext([]).applyRule(this.(ACCESS)(@rule)) }
+            { newState ->
+                newState.withContext([origContext*, newState.get_context()*])
+            }
+    };
+};

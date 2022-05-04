@@ -1,0 +1,64 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `BasicState` class
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Class Definition
+##
+## Payload: {input: generator, context: [items*]}
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class BasicState
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    class.new(input) {
+        return this.(NEW)(@{input, context: []})
+    };
+
+    ## Documented in spec.
+    .addContext(item) {
+        return this.(NEW)(@{
+            this.(ACCESS)()*,
+            context: [this.(ACCESS)(@context)*, item]
+        })
+    };
+
+    ## Documented in spec.
+    .applyRule(rule) {
+        return? rule.parse(this)
+    };
+
+    ## Documented in spec.
+    .get_context() {
+        return this.(ACCESS)(@context)
+    };
+
+    ## Documented in spec.
+    .shiftInput() {
+        def result;
+        return? If.value { this.(ACCESS)(@input).nextValue(result?) }
+            { input ->
+                this.(NEW)(@{
+                    input,
+                    context: [this.(ACCESS)(@context)*, result]
+                })
+            }
+    };
+
+    ## Documented in spec.
+    .withContext(context) {
+        return this.(NEW)(@{this.(ACCESS)()*, context})
+    };
+};

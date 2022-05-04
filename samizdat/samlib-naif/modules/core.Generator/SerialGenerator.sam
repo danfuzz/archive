@@ -1,0 +1,71 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `SerialGenerator` Class
+##
+## Payload is `{first: generator, rest: [generator*]}`.
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import ./NullGenerator :: nullGenerator;
+
+
+##
+## Class Definition
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class SerialGenerator
+        access: ACCESS,
+        new: NEW {
+    class.new(generators*) {
+        ## Return the `nullGenerator` if we weren't passed any arguments.
+        If.is { Cmp.eq(generators, []) }
+            { return nullGenerator };
+
+        ## Return the argument directly if we were only passed one.
+        ## This saves some gratuitous call wrapping / double yields.
+        If.is { Cmp.eq(generators.get_size(), 1) }
+            { return generators* };
+
+        return this.(NEW)(@{
+            first: generators.nth(0),
+            rest: generators.sliceInclusive(1)
+        })
+    };
+
+
+    ## Documented in spec.
+    .collect(optFilterFunction?) {
+        ## Just use the standard implementation.
+        return Generator_stdCollect(this, optFilterFunction*)
+    };
+
+    ## Documented in spec.
+    .fetch() {
+        ## Just use the standard implementation.
+        return Generator_stdFetch(this)
+    };
+
+    ## Documented in spec.
+    .forEach(optFilterFunction?) {
+        ## Just use the standard implementation.
+        return? Generator_stdForEach(this, optFilterFunction*)
+    };
+
+    ## Documented in spec.
+    .nextValue(box) {
+        return? If.value { this.(ACCESS)(@first).nextValue(box) }
+            { nextGen -> this.(NEW)(@{this.(ACCESS)()*, first: nextGen}) }
+            {
+                ## First generator was voided.
+                SerialGenerator.new(this.(ACCESS)(@rest)*).nextValue(box)
+            }
+    };
+};

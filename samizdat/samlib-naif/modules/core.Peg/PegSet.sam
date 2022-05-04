@@ -1,0 +1,59 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `PegSet` class
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import ./PegFail :: fail;
+
+
+##
+## Class Definition
+##
+## Payload: {set: @{names*: true}}
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class PegSet
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    class.new(names*) {
+        If.is { Cmp.eq(names, []) }
+            {
+                ## Trivial case: Empty set, so it can never succeed in
+                ## matching.
+                return fail
+            };
+
+        def set = @{names*: true};  ## A set-like table of all the token names.
+
+        return this.(NEW)(@{set})
+    };
+
+    ## Documented in spec.
+    class.newChars(strings*) {
+        ## Make a combined string, passing it to the general constructor,
+        ## which then splays all the characters out as a set of table keys.
+        def string = "".cat(strings*);
+        def names = string.collect { ch -> Class.typeCast(Symbol, ch) };
+        return this.new(names*)
+    };
+
+    ## Documented in spec.
+    .parse(state) {
+        return? If.value { state.shiftInput() }
+            { newState ->
+                def result = newState.get_context().reverseNth(0);
+                If.is { this.(ACCESS)(@set).get(result.get_name()) }
+                    { newState }
+            }
+    };
+};

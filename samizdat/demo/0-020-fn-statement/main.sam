@@ -1,0 +1,74 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Function statement demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+fn print(args*) {
+    note($Format::sourceUnadorned(args))
+};
+
+
+##
+## Main Tests
+##
+
+fn func1(x) {
+    print("func1", x);
+    return "func1"
+};
+
+note(func1(10));
+
+fn func2(x*) { /out ->
+    print("func2", x);
+    yield /out "func2"
+};
+
+note(func2(20, "twenty"));
+
+## Quoted name.
+fn func3(\"= yowza =") {
+    print("func3", \"= yowza =");
+};
+
+func3("hello");
+
+## Self-recursion.
+fn func4(x) {
+    print("func3", x);
+    If.is { Cmp.lt(x, 5) }
+        {
+            func4(x.add(1));
+            return "func4"
+        }
+};
+
+note(func4(1));
+
+## Mutual recursion.
+fn recFunc1(x) {
+    print("recFunc1", x);
+    If.is { Cmp.lt(x, 5) }
+        { recFunc2(x.add(1)) };
+
+    return "recFunc1"
+};
+
+fn recFunc2(x) {
+    print("recFunc2", x);
+    If.is { Cmp.lt(x, 5) }
+        { recFunc1(x.add(1)) };
+};
+
+note(recFunc1(1));

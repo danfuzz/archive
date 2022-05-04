@@ -1,0 +1,43 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Demo of unnamed arguments
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+fn anon(.) {
+    note("anon()")
+};
+
+fn anonArg(., arg) {
+    note("anonArg() got: ", $Format::source(arg))
+};
+
+fn argAnon(arg, .) {
+    note("argAnon() got: ", $Format::source(arg))
+};
+
+fn argAnonArg(arg1, ., arg2) {
+    note("argAnonArg() got");
+    note("  ", $Format::source(arg1));
+    note("  ", $Format::source(arg2));
+};
+
+
+##
+## Main Tests
+##
+
+anon("x");
+anonArg("x", "blort");
+argAnon("blort", "x");
+argAnonArg("blort", "x", "igram");

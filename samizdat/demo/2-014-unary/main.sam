@@ -1,0 +1,131 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Unary operator demo
+##
+
+
+##
+## Private Definitions
+##
+
+## Prints out the given value.
+fn msg(value) {
+    note($Format::source(value))
+};
+
+## Something to call.
+fn returnVoid() {
+    ## Nothing to see here!
+};
+
+## Something to call.
+fn returnString() {
+    return "Fun times!"
+};
+
+
+##
+## Main Tests
+##
+
+note("Ints and binary");
+
+msg(-0);
+msg(-10);
+msg(- - 20);
+msg(- - - 30);
+msg(!!! 0);
+msg(!!! -1);
+msg(!!! - 1);
+msg(!!! - !!! 1);
+msg(returnString());
+msg(returnVoid()?);
+msg(returnString()?);
+
+note("\nBoolean / logic conversion");
+
+msg(returnVoid()??);
+msg(returnString()??);
+msg(true??);
+msg(false??);  ## This one is the documented surprising result.
+msg((true**)?);
+msg((false**)?);
+
+note("\nLogic ops");
+
+msg((!returnVoid())?);
+msg((!returnString())?);
+msg((!true)?);
+msg((!false)?);  ## This one is the documented surprising result.
+msg((! !10)?);
+msg((! !"fuzzy bunnies")?);
+msg((! ! !@fizmo)?);
+
+note("\nCollections -- size");
+msg(#"foo");
+msg(#[]);
+msg(#({a: 10, b: 20, c: 30, d:40}));
+
+note("\nCollections -- reverse");
+msg(^"!sniffuM");
+msg(^[1000, 100, 10, 1]);
+
+note("\nCollections -- single value index");
+msg(["blort", "fizmo", "igram"][0]);
+msg(["blort", "fizmo", "igram"][1]);
+msg(["blort", "fizmo", "igram"][3]?);
+msg(["blort", "fizmo", "igram"][-10]?);
+msg(["blort", "fizmo", "igram"]["x"]?);
+
+msg({a: "axolotl", c: "cuttlefish", n: "nutria"}[@a]);
+msg({a: "axolotl", c: "cuttlefish", n: "nutria"}[@n]);
+msg({a: "axolotl", c: "cuttlefish", n: "nutria"}::c);
+msg({a: "axolotl", c: "cuttlefish", n: "nutria"}::\"c");
+msg({"a": "axolotl", "c": "cuttlefish", "n": "nutria"}::"c");
+msg({a: "axolotl", c: "cuttlefish", n: "nutria"}[0]?);
+
+msg("frotz"[0]);
+msg("frotz"[4]);
+msg("frotz"[5]?);
+msg("frotz"[-1]?);
+msg("frotz"["ztrof"]?);
+
+msg(returnString()[2]);
+msg((returnString()[99])?);
+
+note("\nSequences -- ranges");
+msg("--Biscuits!---"[2..10]);
+msg("--Biscuits!---"[2..!11]);
+msg([-7, -6, -5, 1, 2, 3][3..]);
+msg([-7, -6, -5, 1, 2, 3][3..!]);
+msg([1, 2, 3, -7, -6, -5][..2]);
+msg([1, 2, 3, -7, -6, -5][..!2]);
+msg([1, 2, 3, 4, 5, 6][..]);
+msg([1, 2, 3, 4, 5, 6][..!]);
+msg([1, 2, 3][2..1]);
+msg([1, 2, 3][-10..20]);
+msg(([1, 2, 3][4..3])?);   ## `?` since this should be a void return.
+msg(([1, 2, 3][3..1])?);   ## Ditto.
+msg(([1, 2, 3][5..!5])?);  ## Ditto.
+msg(([][1..])?);           ## Ditto.
+msg(([][..!])?);           ## Ditto.
+
+note("\nSequences -- single value index from end");
+msg([1, 2, 3][^-1]?);
+msg([1, 2, 3][^0]);
+msg([1, 2, 3][^1]);
+msg([1, 2, 3][^2]);
+msg([1, 2, 3][^3]?);
+
+note("\nSequences -- ranges including from-end");
+msg("--blort-spaz-foo"[^2..]);
+msg("--blort-spaz-foo"[^2..!]);
+msg("--blort-spaz-foo"[^7..^4]);
+msg("--blort-spaz-foo"[^7..!^3]);
+msg("blort-zorch"[..^6]);
+msg("blort-zorch"[..!^5]);
+msg([0, 1, 2, 3, 4, 5][1..^1]);
+msg([0, 1, 2, 3, 4, 5][^2..!5]);

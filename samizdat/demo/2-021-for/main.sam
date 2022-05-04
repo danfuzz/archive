@@ -1,0 +1,108 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## For loop expression demo
+##
+
+
+##
+## Private Definitions
+##
+
+## Output the given values.
+fn print(values*) {
+    note("    \%Q(values)")
+};
+
+
+##
+## Main Tests
+##
+
+note("Empty content.");
+for (x in []) {
+    die("Shouldn't happen.");
+};
+
+note("\nSingle element list.");
+for (x in [1]) {
+    print(x)
+};
+
+note("\nTwo element list.");
+for (x in [@blort, @fizmo]) {
+    print(x)
+};
+
+note("\nThree element list.");
+for (x in ["muffin", "biscuit", "scone"]) {
+    print(x)
+};
+
+note("\nString.");
+for (x in "Blort!") {
+    print(x)
+};
+
+note("\nFive-element map, no name binding.");
+for (. in {a:1, b:2, c:3, d:4, e:5}) {
+    print("(item)")
+};
+
+note("\nList and string in parallel.");
+for (x in [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55], y in "fibonacci") {
+    print(x, y)
+};
+
+note("\nExplicit generator expression.");
+for (value in ( x in [1, 2, 3, 4] -> x * x )) {
+    print(value)
+};
+
+note("\nUnnamed break.");
+def result1 = for (x in [1, 2, 3, 4, 5]) {
+    if (x \== 3) { break 23 };
+    print(x)
+};
+note("Result: \%q(result1)");
+
+note("\nNamed break.");
+def result2 = for /out (x in [1, 2, 3, 4, 5]) {
+    if (x \== 3) { yield /out 187 };
+    print(x)
+};
+note("Result: \%q(result2)");
+
+note("\nUnnamed continue.");
+for (x in [1, 2, 3, 4, 5]) {
+    if (x \== 3) { continue };
+    print(x)
+};
+
+note("\nNamed continue.");
+for (x in [1, 2, 3, 4, 5]) { /next ->
+    if (x \== 3) { yield /next };
+    print(x)
+};
+
+note("\nVoid yield.");
+var got = (
+    for (x in [1, 2, 3, 4, 5]) {
+        ## This space intentionally left blank.
+    }
+)?;
+if (got != []) {
+    die("Bad non-void!");
+};
+
+note("\nNon-void yield.");
+got := (
+    for (x in [1, 2, 3, 4, 5]) {
+        if (x < 4) {
+            continue x
+        }
+    }
+);
+note("Got: \%q(got)")

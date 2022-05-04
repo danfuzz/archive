@@ -1,0 +1,82 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `Object` demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+## Checks an expected result.
+fn expect(name, result, func) {
+    If.value { func() }
+        { got ->
+            If.not { Cmp.eq(got, result) }
+                {
+                    note("Unexpected result: ", $Format::source(got));
+                    die("For: ", name);
+                }
+        }
+        {
+            note("Unexpected void result.");
+            die("For: ", name);
+        }
+};
+
+## Checks an expected void result.
+fn expectVoid(name, func) {
+    If.value { func() }
+        { got ->
+            note("Unexpected non-void result: ", $Format::source(got));
+            die("For: ", name)
+        }
+};
+
+## Checks an expected equality.
+fn expectEq(name, v1, v2) {
+    If.not { Cmp.eq(v1, v2) }
+        {
+            note("Unexpected: ", $Format::source(v1), " != ",
+                $Format::source(v2));
+            die("For: ", name)
+        }
+};
+
+## Checks an expected inequality.
+fn expectNe(name, v1, v2) {
+    If.not { Cmp.ne(v1, v2) }
+        {
+            note("Unexpected: ", $Format::source(v1), " == ",
+                $Format::source(v2));
+            die("For: ", name)
+        }
+};
+
+
+##
+## Main demos
+##
+
+note("Objects");
+
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+def Blort = Object.subclass(@Blort, {access: ACCESS, new: NEW});
+
+def b1 = Blort.(NEW)();
+def b2 = Blort.(NEW)(@{x: 10});
+def b3 = b2.(NEW)(@{y: 20});
+
+expectEq("access 1", @{},      b1.(ACCESS)());
+expectEq("access 2", @{x: 10}, b2.(ACCESS)());
+expectEq("access 3", @{y: 20}, b3.(ACCESS)());
+expectEq("access 4", 20,       b3.(ACCESS)(@y));
+
+note("All good.");

@@ -1,0 +1,86 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `FilterGenerator` Class
+##
+## Payload is a map `{filterFunction: function, generator: subGen}`.
+## `subGen` is expected to produce lists of arguments to apply.
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import ./ParaGenerator :: *;
+
+
+##
+## Class Definition
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class FilterGenerator
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    class.new(filterFunction, generators*) {
+        return this.(NEW)(
+            @{
+                filterFunction,
+                generator: ParaGenerator.new(generators*)
+            })
+    };
+
+    ## Documented in spec.
+    .collect(optFilterFunction?) {
+        ## Just use the standard implementation.
+        return Generator_stdCollect(this, optFilterFunction*)
+    };
+
+    ## Documented in spec.
+    .fetch() {
+        ## Just use the standard implementation.
+        return Generator_stdFetch(this)
+    };
+
+    ## Documented in spec.
+    .forEach(optFilterFunction?) {
+        ## Just use the standard implementation.
+        return? Generator_stdForEach(this, optFilterFunction*)
+    };
+
+    ## Documented in spec.
+    .nextValue(box) {
+        var innerGen = this.(ACCESS)(@generator);
+        def filterFunction = this.(ACCESS)(@filterFunction);
+        var result;
+
+        ## This loop handles the fact that the filter function is
+        ## allowed to yield void to indicate a generated value is to
+        ## be discarded.
+        If.loop {
+            If.value { innerGen.nextValue(result?) }
+                { nextGen ->
+                    If.value { filterFunction(result*) }
+                        { value ->
+                            box* := value;
+                            return this.(NEW)(
+                                @{filterFunction, generator: nextGen})
+                        }
+                        {
+                            ## The filter discarded the value. As this doesn't
+                            ## `return` (per se) it will fall through to the
+                            ## end of the loop body and iterate.
+                            innerGen := nextGen;
+                        }
+                }
+                {
+                    ## The inner generator was voided.
+                    return
+                }
+        }
+    };
+};

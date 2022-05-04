@@ -1,0 +1,193 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Calculator Demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang1
+
+import core.Generator :: *;
+
+
+##
+## Private Definitions
+##
+
+## Map from binary operation names to precedece/function maps.
+def BINARY_OPS = {
+    @"+": {function: { x, y -> x.add(y) }, precedence: 1},
+    @"-": {function: { x, y -> x.sub(y) }, precedence: 1},
+    @"*": {function: { x, y -> x.mul(y) }, precedence: 2},
+    @"/": {function: { x, y -> x.div(y) }, precedence: 2},
+    @"%": {function: { x, y -> x.mod(y) }, precedence: 2}
+};
+
+## Map from unary operation names to functions.
+def UNARY_OPS = {
+    @"+": { x -> x },
+    @"-": { x -> x.neg() }
+};
+
+## Takes an initial value and a list of one-argument functions, and
+## does a reduction by applying each of the functions in order.
+fn applyAll(initialValue, functions) {
+    var result = initialValue;
+
+    functions.forEach { function ->
+        result := function(result)
+    };
+
+    return result
+};
+
+## Takes an initial value and a list of maps of `{op, value}`,
+## and evaluates the result using the "shunting yard" algorithm.
+fn applyShuntingYard(initialValue, opValues) {
+    ## Reduces the top of the given pending stack. That is, it takes the
+    ## top two values, and combines them by applying the top op, and places
+    ## the result back at the top of the value stack.
+    fn applyTop(ops, values) {
+        def valuesSizeM2 = values.get_size().sub(2);
+        def function = ops.reverseNth(0)::function;
+        def newValue = function(values.sliceInclusive(valuesSizeM2)*);
+        return {
+            ops:    ops.sliceExclusive(0),
+            values: [values.sliceExclusive(0, valuesSizeM2)*, newValue]
+        }
+    };
+
+    ## Reduces the given pending stack with knowledge that the next operator
+    ## to apply is of the given precedence.
+    fn reducePending(origOps, origValues, precedence) {
+        var ops = origOps;
+        var values = origValues;
+        return If.loopUntil { /out ->
+            If.value { ops.reverseNth(0) }
+                { lastOp ->
+                    If.is { Cmp.ge(lastOp::precedence, precedence) }
+                        {
+                            def opVal = applyTop(ops, values);
+                            ops := opVal::ops;
+                            values := opVal::values;
+                            yield /out  ## Iterate.
+                        }
+                };
+            yield /out {ops, values}
+        }
+    };
+
+    var ops = [];
+    var values = [initialValue];
+
+    opValues.forEach { opValue ->
+        def op = opValue::op;
+        def value = opValue::value;
+        def opVal = reducePending(ops, values, op::precedence);
+
+        ops := [opVal::ops*, op];
+        values := [opVal::values*, value]
+    };
+
+    ## Use precedence `-1` to drain the op stack, leaving a single
+    ## value.
+    def finalResult = reducePending(ops, values, -1);
+    return finalResult::values*
+};
+
+## Forward declaration of `expression`.
+def expression;
+
+## Parses a single digit, yielding its value as an int.
+def digit = {:
+    ch = ["0".."9"]
+    {
+        def codepoint = Class.typeCast(Int, Class.typeCast(String, ch.get_name()));
+        codepoint.sub(Class.typeCast(Int, "0"))
+    }
+:};
+
+## Parses a whole number (non-negative integer), yielding its value as an int.
+def number = {:
+    digits = digit+
+    {
+        var result = 0;
+        digits.forEach { digit ->
+            result := digit.add(result.mul(10))
+        };
+        result
+    }
+:};
+
+## Parses an expression term. In this case it's either a number or a
+## parenthesized expression. Yields the number or evaluated expression result,
+## respectively.
+def term = {:
+    number
+|
+    "("
+    ex = %expression
+    ")"
+    { ex }
+:};
+
+## Parses a unary (in this case, prefix) operation, yielding its corresponding
+## function.
+def unaryOp = {:
+    op = ["+-"]
+    { UNARY_OPS.get(op.get_name()) }
+:};
+
+## Parses a unary expression, that is, a series of unary operators followed
+## by a term, yielding the evaluated result.
+def unaryExpression = {:
+    ops = unaryOp*
+    ex = term
+    { applyAll(ex, ops.reverse()) }
+:};
+
+## Parses a binary operation, yielding a map of precedence and function.
+def binaryOp = {:
+    op = ["+-*/%"]
+    { BINARY_OPS.get(op.get_name()) }
+:};
+
+## Parses a chained sequence of unary expressions separated by binary
+## operators.
+expression := {:
+    firstValue = unaryExpression
+    opValues = (
+        op = binaryOp
+        value = unaryExpression
+        { {op, value} }
+    )*
+    { applyShuntingYard(firstValue, opValues) }
+:};
+
+## Evaluates all the expressions passed to it, printing the evaluated results
+## in order. Each expression is expected to be terminated with a newline.
+def evalExpressions = {:
+    (
+        ex = expression
+        "\n"
+        {
+            note($Format::source(ex));
+            ## Explicit yield here to indicate successful parsing.
+            null
+        }
+    )*
+:};
+
+
+##
+## Main Definition
+##
+
+export fn main(selfPath, origArgs*) {
+    def args = If.or { Cmp.ne(origArgs, []) } { ["100+7*2-(8000/-10)"] };
+    def argsFiltered = args.collect { arg -> arg.cat("\n") };
+    def exprString = "".cat(argsFiltered*);
+    $Peg::apply(evalExpressions, exprString);
+};

@@ -1,0 +1,106 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Class definition syntax demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+fn print(args*) {
+    note($Format::sourceUnadorned(args))
+};
+
+
+##
+## Main Tests
+##
+
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+## Simplest possible class.
+
+note("Blort (the first)");
+
+class Blort {
+    ## This space intentionally left blank.
+};
+
+print(Blort);
+print(Blort.get_parent());
+
+## Another class with the same name.
+
+note("\nBlort (the second)");
+
+def OtherBlort = {
+    class Blort { };
+    Blort
+}();
+
+print(OtherBlort);
+print(OtherBlort.get_parent());
+If.is { Cmp.eq(Blort, OtherBlort) }
+    { die("Should be different classes!") };
+
+
+## Class with secrets and no methods.
+
+note("\nFizmo");
+
+class Fizmo
+        access: ACCESS,
+        new: NEW {
+    ## This space intentionally left blank.
+};
+
+print(Fizmo);
+def fizmo = Fizmo.(NEW)();
+print(fizmo);
+print(fizmo.(ACCESS)());
+
+## Class with secrets and just one instance method.
+
+note("\nIgram");
+
+class Igram
+        access: ACCESS,
+        new: NEW {
+    .hello() {
+        note("Igram! ", this.(ACCESS)()::effect)
+    }
+};
+
+print(Igram);
+def igram = Igram.(NEW)(@{effect: "purple -> invisible"});
+print(igram);
+print(igram.(ACCESS)());
+print(igram.(ACCESS)(@effect));
+igram.hello();
+
+## Class with secrets and just one class method.
+
+note("\nFrotz");
+
+class Frotz
+        access: ACCESS,
+        new: NEW {
+    class.new(light) {
+        note("New Frotz!");
+        return this.(NEW)(@{light})
+    }
+};
+
+print(Frotz);
+def frotz = Frotz.new("glowing");
+print(frotz);
+print(frotz.(ACCESS)());
+print(frotz.(ACCESS)(@light));

@@ -1,0 +1,77 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Demo of nonlocal exit
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+fn bad() {
+    die("Wrong!")
+};
+
+fn good() {
+    note("Ok")
+};
+
+fn returnVoid1() {
+    return
+};
+
+fn returnVoid2() {
+    return? returnVoid1()
+};
+
+fn returnVoid3() { /out ->
+    yield /out
+};
+
+fn returnVoid4() { /out ->
+    yield? /out returnVoid1()
+};
+
+def returnVoid5 = { /out -> yield /out };
+
+def returnVoid6 = { /out -> yield? /out returnVoid1() };
+
+fn returnArg1(a) {
+    return a
+};
+
+fn returnArg2(a) { /out ->
+    yield /out a
+};
+
+def returnArg3 = { a /out -> yield /out a };
+
+
+##
+## Main Tests
+##
+
+If.is(returnVoid1, bad, good);
+If.is(returnVoid2, bad, good);
+If.is(returnVoid3, bad, good);
+If.is(returnVoid4, bad, good);
+If.is(returnVoid5, bad, good);
+If.is(returnVoid6, bad, good);
+
+If.value { returnArg1("woo") }
+    { v -> note(v) }
+    { bad() };
+
+If.value { returnArg2("woo") }
+    { v -> note(v) }
+    { bad() };
+
+If.value { returnArg3("woo") }
+    { v -> note(v) }
+    { bad() };

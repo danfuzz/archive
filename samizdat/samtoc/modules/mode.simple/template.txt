@@ -1,0 +1,75 @@
+// GENERATED CODE!
+// GENERATED CODE!
+// GENERATED CODE!
+//
+// This code *might* be derived from a copyrighted source. Proceed with
+// caution!
+
+// Needed by `Jump.h`. See that file for further info.
+#define _XOPEN_SOURCE 700
+
+#include "type/Bool.h"
+#include "type/Box.h"
+#include "type/Builtin.h"
+#include "type/Class.h"
+#include "type/Cmp.h"
+#include "type/If.h"
+#include "type/Int.h"
+#include "type/Jump.h"
+#include "type/List.h"
+#include "type/Map.h"
+#include "type/Null.h"
+#include "type/Object.h"
+#include "type/Record.h"
+#include "type/String.h"
+#include "type/Symbol.h"
+#include "type/SymbolTable.h"
+#include "type/define.h"
+#include "util.h"
+
+/** Global environment originally passed into `eval`. */
+static zvalue GLOBALS = NULL;
+
+
+//
+// Literal values
+//
+
+\(literalDeclarations)
+static void initLiterals(zvalue env) {
+\(literalInits)}
+
+
+//
+// Closure definitions
+//
+
+\(closureDeclarations)
+\(closureBodies)
+\(closureMakers)
+static zvalue mainClosure(void) {
+\(mainClosure)}
+
+
+//
+// Main entry point
+//
+
+/** Top-level evaluation result. */
+static zvalue NODE_RESULT = NULL;
+
+zvalue eval(zvalue env) {
+  if (GLOBALS == NULL) {
+    GLOBALS = env;
+    initLiterals(env);
+  } else if (!cmpEq(GLOBALS, env)) {
+    die("Cannot re-eval with different global environment.");
+  }
+
+  if (NODE_RESULT == NULL) {
+    NODE_RESULT = mainClosure();
+    datImmortalize(NODE_RESULT);
+  }
+
+  return NODE_RESULT;
+}

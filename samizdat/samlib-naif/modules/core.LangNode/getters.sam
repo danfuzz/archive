@@ -1,0 +1,86 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+## Splits a string into a list of strings, dividing on the given character.
+fn splitAtChar(s, ch) {
+    var result = [];
+    var current = "";
+
+    fn addCurrentToResult() {
+        result := [result*, current];
+        current := ""
+    };
+
+    s.forEach { one ->
+        If.is { Cmp.eq(one, ch) }
+            { addCurrentToResult() }
+            { current := current.cat(one) }
+    };
+
+    addCurrentToResult();
+    return result
+};
+
+
+##
+## Exported Definitions
+##
+
+## Documented in spec.
+export fn get_baseName(source) {
+    return If.cases(
+        { source.get_name() },
+        @{
+            @external: { . ->
+                def components = splitAtChar(source::name, ".");
+                components.reverseNth(0)
+            },
+
+            @internal: { . ->
+                def components = splitAtChar(source::name, "/");
+                def last = components.reverseNth(0);
+                def parts = splitAtChar(last, ".");
+                parts.nth(0)
+            }
+        })
+};
+
+## Documented in spec.
+export fn get_definedNames(node) {
+    return If.cases(
+        { node.get_name() },
+        @{
+            @export: { . ->
+                get_definedNames(node::value)
+            },
+
+            @importModuleSelection: { . ->
+                def select = If.or { node::select }
+                    {
+                        die("Cannot call `get_definedNames` on unresolved ",
+                            "import.")
+                    };
+
+                If.value { node::prefix }
+                    { prefix -> select.collect { name -> prefix.cat(name) } }
+                    { select }
+            },
+
+            @importModule:
+            @importResource:
+            @varDef: { . ->
+                [node::name]
+            }
+        },
+        { . -> [] }
+    )
+};

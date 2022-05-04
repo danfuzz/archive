@@ -1,0 +1,35 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Class definition: `null` as a Resolver
+##
+
+
+##
+## Class definition
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+class NullResolver
+        access: ACCESS,
+        new: NEW {
+    .resolve(source) {
+        ## Return `void`, that is, fail to resolve. If we hit this point, then
+        ## there is probably something actually wrong (e.g. insufficient
+        ## entries on the `externals` link path), and it will probably end up
+        ## percolating back up as an error.
+        return
+    };
+};
+
+
+##
+## Exported Definitions
+##
+
+export def nullResolver = NullResolver.(NEW)();

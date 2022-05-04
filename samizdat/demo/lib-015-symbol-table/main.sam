@@ -1,0 +1,93 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `SymbolTable` demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+## Checks an expected result.
+fn expect(name, result, func) {
+    If.value { func() }
+        { got ->
+            If.not { Cmp.eq(got, result) }
+                {
+                    note("Unexpected result: ", $Format::source(got));
+                    die("For: ", name);
+                }
+        }
+        {
+            note("Unexpected void result.");
+            die("For: ", name);
+        }
+};
+
+## Checks an expected void result.
+fn expectVoid(name, func) {
+    If.value { func() }
+        { got ->
+            note("Unexpected non-void result: ", $Format::source(got));
+            die("For: ", name)
+        }
+};
+
+## Checks an expected equality.
+fn expectEq(name, v1, v2) {
+    If.not { Cmp.eq(v1, v2) }
+        {
+            note("Unexpected: ", $Format::source(v1), " != ",
+                $Format::source(v2));
+            die("For: ", name)
+        }
+};
+
+## Checks an expected inequality.
+fn expectNe(name, v1, v2) {
+    If.not { Cmp.ne(v1, v2) }
+        {
+            note("Unexpected: ", $Format::source(v1), " == ",
+                $Format::source(v2));
+            die("For: ", name)
+        }
+};
+
+
+##
+## Main demos
+##
+
+note("SymbolTables");
+
+expectEq("eq 1", @{}, @{});
+expectEq("eq 2", @{blort: "splort"}, @{@blort: "splort"});
+
+expectNe("ne 1", @{blort: "splort"}, @{blort: "zlort"});
+expectNe("ne 2", @{blort: "splort"}, @{zlort: "splort"});
+
+expectEq("cat 1", @{x: 10, y: 20}, @{x: 10}.cat(@{@y: 20}));
+expectEq("cat 2", @{x: 10, y: 20}, @{x: 10, y: 10}.cat(@{@y: 20}));
+
+expectEq("del 1",  @{},           @{}.del());
+expectEq("del 2",  @{a: 1},       @{a: 1}.del());
+expectEq("del 3",  @{a: 1},       @{a: 1}.del(@b));
+expectEq("del 4",  @{},           @{a: 1}.del(@a));
+expectEq("del 5",  @{a: 1},       @{a: 1, b: 2}.del(@b));
+expectEq("del 6",  @{b: 2},       @{a: 1, b: 2}.del(@a));
+expectEq("del 7",  @{a: 1, b: 2}, @{a: 1, b: 2}.del(@x));
+expectEq("del 8",  @{},           @{a: 1, b: 2}.del(@a, @b));
+expectEq("del 9",  @{b: 2},       @{a: 1, b: 2, c: 3}.del(@a, @c));
+expectEq("del 10", @{b: 2, d: 4}, @{a: 1, b: 2, c: 3, d: 4}.del(@a, @c));
+expectEq("del 11", @{b: 2},       @{a: 1, b: 2, c: 3, d: 4}.del(@a, @c, @d));
+
+expectEq("interpolate 1", @{x: 10}, @{@{x: 10}*});
+expectEq("interpolate 2", @{x: 10, y: 20}, @{y: 20, @{x: 10}*});
+
+note("All good.");

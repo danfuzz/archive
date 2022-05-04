@@ -1,0 +1,76 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Range demo, with layer 2 syntax
+##
+
+
+##
+## Private Definitions
+##
+
+## Prints out the values yielded by the given generator or list.
+fn msg(item) {
+    if (List.accepts(item)) {
+        note("Got list: \%q(item)")
+    } else {
+        note("Got gen: \%q([item*])")
+    }
+};
+
+## Prints out 10 values yielded by the given generator (and no more).
+fn msgTen(generator) {
+    def values = [ v in generator, for 10 -> v ];
+    note("Got: \%q(values)")
+};
+
+
+##
+## Main Tests
+##
+
+note("Inclusive, default increment...");
+msg((100..110));
+msg(("U".."Z"));
+msg((9..9));
+msg((9..0));
+msg(("f".."f"));
+msg(("f".."a"));
+msg([1..10]);
+msg([10..1]);
+
+note("\nInclusive, explicit increment...");
+msg((0..1000 by 200));
+msg(("a".."z" by 5));
+msg((10..1 by -1));
+msg(("F".."A" by -2));
+msg((9..9 by 0));
+msg([0..9 by 3]);
+
+note("\nExclusive, default increment...");
+msg((100..!110));
+msg(("U"..!"Z"));
+msg((9..!9));
+msg((9..!0));
+msg(("f"..!"f"));
+msg(("f"..!"a"));
+msg([1..!10]);
+msg([10..!1]);
+
+note("\nExclusive, explicit increment...");
+msg((0..!1000 by 200));
+msg(("a"..!"z" by 5));
+msg((10..!1 by -1));
+msg(("F"..!"A" by -2));
+msg((9..!9 by 0));
+msg([0..!9 by 3]);
+
+note("\nOpen, default increment...");
+msgTen((-10..));
+msgTen(("M"..));
+
+note("\nOpen, explicit increment...");
+msgTen((99.. by -1));
+msgTen(("z".. by -2));

@@ -1,0 +1,67 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## `CacheState` class
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Class Definition
+##
+## Payload: {input: generator, context: [item*], shifted: lazy}
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class CacheState
+        access: ACCESS,
+        new: NEW {
+    ## Documented in spec.
+    class.new(input) {
+        return this.fullNew(input, [])
+    };
+
+    ## Documented in spec.
+    class.fullNew(input, context) {
+        def shifted {
+            def result;
+            If.value { input.nextValue(result?) }
+                { newInput -> this.fullNew(newInput, [context*, result]) }
+        };
+
+        return this.(NEW)(@{input, context, shifted: shifted?})
+    };
+
+    ## Documented in spec.
+    .addContext(item) {
+        def data = this.(ACCESS)();
+        return CacheState.fullNew(data::input, [data::context*, item])
+    };
+
+    ## Documented in spec.
+    .applyRule(rule) {
+        return? rule.parse(this)
+    };
+
+    ## Documented in spec.
+    .get_context() {
+        return this.(ACCESS)()::context
+    };
+
+    ## Documented in spec.
+    .shiftInput() {
+        return? this.(ACCESS)()::shifted*
+    };
+
+    ## Documented in spec.
+    .withContext(context) {
+        def data = this.(ACCESS)();
+        return CacheState.fullNew(data::input, context)
+    };
+};

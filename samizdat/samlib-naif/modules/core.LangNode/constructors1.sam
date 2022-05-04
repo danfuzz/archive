@@ -1,0 +1,160 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import ./literals :: SYMS, makeLiteral;
+
+
+##
+## Exported Definitions
+##
+
+## Documented in spec.
+export fn makeApply(target, name, optValues?) {
+    def values = If.or { optValues* } { @void{} };
+    return @apply{target, name, values}
+};
+
+## Documented in spec.
+export fn makeBasicClosure(table) {
+    return @closure{
+        formals:    [],
+        statements: [],
+        table*
+    }
+};
+
+## Documented in spec.
+export fn makeCall(target, name, values*) {
+    return @call{target, name, values}
+};
+
+## Documented in spec.
+export fn makeCallLiterals(target, name, values*) {
+    def literals = values.collect(makeLiteral);
+    return makeCall(target, name, literals*)
+};
+
+## Documented in spec.
+export fn makeExport(node) {
+    return @export{value: node}
+};
+
+## Documented in spec.
+export fn makeExportSelection(names+) {
+    return @exportSelection{select: names}
+};
+
+## Documented in spec.
+export fn makeFunCall(function, values*) {
+    return If.is { function.hasName(@methodId) }
+        {
+            ## It's a method call of some sort.
+            def name = function::name;
+            return If.value { function::class }
+                { cls ->
+                    ## It binds `class`, so it's a class method.
+                    makeCall(cls, name, values*)
+                }
+                {
+                    ## It's an instance method.
+                    def first = values.nth(0);
+                    def rest = values.sliceInclusive(1);
+                    makeCall(first, name, rest*)
+                }
+        }
+        {
+            ## It's a regular function call.
+            makeCall(function, SYMS::call, values*)
+        }
+};
+
+## Documented in spec.
+export fn makeGet(collArg, keyArg) {
+    return makeCall(collArg, SYMS::get, keyArg)
+};
+
+## Documented in spec.
+export fn makeMaybe(value) {
+    return @maybe{value}
+};
+
+## Documented in spec.
+export fn makeNoYield(value) {
+    return @noYield{value}
+};
+
+## Documented in spec.
+export fn makeNonlocalExit(function, optValue?) {
+    def value = If.or { optValue* } { @void{} };
+    return @nonlocalExit{function, value}
+};
+
+## Documented in spec.
+export fn makeVarDef(name, box, optValue?) {
+    def value = If.or { optValue* } { @void{} };
+    return @varDef{name, box, value}
+};
+
+## Documented in spec.
+export fn makeVarFetch(name) {
+    return @fetch{target: makeVarRef(name)}
+};
+
+## Documented in spec.
+export fn makeVarFetchGeneral(name) {
+    def ref = makeVarRef(name);
+    return @fetch{
+        box:    ref,
+        target: ref,
+        lvalue: { node -> makeVarStore(name, node) }
+    }
+};
+
+## Documented in spec.
+export fn makeVarRef(name) {
+    return @varRef{name}
+};
+
+## Documented in spec.
+export fn makeVarStore(name, value) {
+    return @store{target: makeVarRef(name), value}
+};
+
+## Documented in spec.
+export fn withFormals(node, formals) {
+    return node.cat(@{formals})
+};
+
+## Documented in spec.
+export fn withName(node, name) {
+    return node.cat(@{name})
+};
+
+## Documented in spec.
+export fn withYieldDef(node, name) {
+    def newBindings = If.value { node::yieldDef }
+        { origName ->
+            ## There's already a `yieldDef`. Prepend a variable definition
+            ## statement instead of clobbering the existing binding.
+            @{statements: [makeVarDef(name, @result, makeVarFetch(origName))]}
+        }
+        { @{yieldDef: name} };
+
+    return node.cat(newBindings)
+};
+
+## Documented in spec.
+export fn withYieldDefIfAbsent(node, name) {
+    return If.is { node::yieldDef }
+        { node }
+        { withYieldDef(node, name) }
+};
+
+## Documented in spec.
+export fn withoutIntermediates(node) {
+    return node.del(@box, @interpolate, @lvalue)
+};

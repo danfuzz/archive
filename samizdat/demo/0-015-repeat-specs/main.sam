@@ -1,0 +1,93 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Demo of formal argument repeat specifiers
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+fn opt(arg?) {
+    note("opt() got: ", $Format::source(arg))
+};
+
+fn plus(args+) {
+    note("plus() got: ", $Format::source(args))
+};
+
+fn star(args*) {
+    note("star() got: ", $Format::source(args))
+};
+
+fn argOpt(arg1, arg2?) {
+    note("argOpt() got:");
+    note("  ", $Format::source(arg1));
+    note("  ", $Format::source(arg2));
+};
+
+fn argPlus(arg1, arg2+) {
+    note("argPlus() got:");
+    note("  ", $Format::source(arg1));
+    note("  ", $Format::source(arg2));
+};
+
+fn argStar(arg1, arg2*) {
+    note("argStar() got:");
+    note("  ", $Format::source(arg1));
+    note("  ", $Format::source(arg2));
+};
+
+fn optStar(arg1?, arg2*) {
+    note("optStar() got:");
+    note("  ", $Format::source(arg1));
+    note("  ", $Format::source(arg2));
+};
+
+fn argOptStar(arg1, arg2?, arg3*) {
+    note("argOptStar() got:");
+    note("  ", $Format::source(arg1));
+    note("  ", $Format::source(arg2));
+    note("  ", $Format::source(arg3));
+};
+
+
+##
+## Main Tests
+##
+
+opt();
+opt("blort");
+star();
+star("blort");
+star("blort", "igram");
+star("blort", "igram", "fizmo");
+plus("blort");
+plus("blort", "igram");
+plus("blort", "igram", "fizmo");
+
+argOpt("x");
+argOpt("x", "blort");
+argStar("x");
+argStar("x", "blort");
+argStar("x", "blort", "igram");
+argStar("x", "blort", "igram", "fizmo");
+argPlus("x", "blort");
+argPlus("x", "blort", "igram");
+argPlus("x", "blort", "igram", "fizmo");
+
+optStar();
+optStar("blort");
+optStar("blort", "igram");
+optStar("blort", "igram", "fizmo");
+
+argOptStar("x");
+argOptStar("x", "blort");
+argOptStar("x", "blort", "igram");
+argOptStar("x", "blort", "igram", "fizmo");

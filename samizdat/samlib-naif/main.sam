@@ -1,0 +1,39 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Samizdat Core Library Secondary Loader
+##
+## This gets loaded from the C `main` code and is responsible for returning
+## the standard global variable environment.
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import core.Globals;
+import core.ModuleSystem;
+
+## Initializes the world, and returns the final global variable environment.
+## `libraryPath` is the filesystem path to the core library.
+## `primitiveGlobals` is the map of primitive-defined bindings (e.g., defined
+## in C code).
+export fn main(libraryPath, primitiveGlobals) {
+    def earlyGlobals = @{
+        primitiveGlobals*,
+        $Globals::earlyEnvironment()*
+    };
+
+    note("\nLoading core library...");
+
+    def loader = $ModuleSystem::ExternalLoader.new(
+        libraryPath.cat("/modules"), earlyGlobals, null);
+
+    def innerGlobals =
+        $ModuleSystem::loadModule(loader, @external{name: "core.Globals"});
+    def result = innerGlobals::fullEnvironment();
+
+    note("    [fin]\n");
+    return result
+};

@@ -1,0 +1,140 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Comparison functions / methods demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+
+##
+## Private Definitions
+##
+
+## Checks an expected result.
+fn expect(name, result, func) {
+    If.value { func() }
+        { got ->
+            If.not { Cmp.eq(got, result) }
+                {
+                    note("Unexpected result: ", $Format::source(got));
+                    die("For: ", name);
+                }
+        }
+        {
+            note("Unexpected void result.");
+            die("For: ", name);
+        }
+};
+
+## Checks an expected void result.
+fn expectVoid(name, func) {
+    If.value { func() }
+        { got ->
+            note("Unexpected non-void result: ", $Format::source(got));
+            die("For: ", name)
+        }
+};
+
+## Checks an expected equality.
+fn expectEq(name, v1, v2) {
+    If.not { Cmp.eq(v1, v2) }
+        {
+            note("Unexpected: ", $Format::source(v1), " != ",
+                $Format::source(v2));
+            die("For: ", name)
+        }
+};
+
+## Checks an expected inequality.
+fn expectNe(name, v1, v2) {
+    If.not { Cmp.ne(v1, v2) }
+        {
+            note("Unexpected: ", $Format::source(v1), " == ",
+                $Format::source(v2));
+            die("For: ", name)
+        }
+};
+
+
+##
+## Main Tests
+##
+
+note("Comparisons");
+
+## These are just testing the method calls inside the `expect*` functions.
+expectEq("expect 1", 1, 1);
+expectEq("expect 2", @foo, @foo);
+expectNe("expect 3", 1, 2);
+expectNe("expect 4", 1, @foo);
+
+expectEq("eq 1", "x", Cmp.eq("x", "x"));
+expectEq("eq 2", @blort, Cmp.eq(@blort, @blort));
+expectVoid("eq 3", { Cmp.eq(1, 2) });
+expectVoid("eq 4", { Cmp.eq(1, @foo) });
+
+expectEq("ne 1", "x", Cmp.ne("x", "y"));
+expectEq("ne 2", 2, Cmp.ne(2, "z"));
+expectVoid("ne 3", { Cmp.ne(1, 1) });
+expectVoid("ne 4", { Cmp.ne(@foo, @foo) });
+
+expectEq("ge 1", "z", Cmp.ge("z", "a"));
+expectEq("ge 2", 2, Cmp.ge(2, false));
+expectEq("ge 3", @blort, Cmp.ge(@blort, @blort));
+expectVoid("ge 4", { Cmp.ge(1, 2) });
+expectVoid("ge 5", { Cmp.ge(1, @foo) });
+
+expectEq("gt 1", "z", Cmp.gt("z", "a"));
+expectEq("gt 2", 2, Cmp.gt(2, false));
+expectVoid("gt 3", { Cmp.gt(1, 1) });
+expectVoid("gt 4", { Cmp.gt(1, @foo) });
+
+expectEq("le 1", "a", Cmp.le("a", "z"));
+expectEq("le 2", false, Cmp.le(false, 2));
+expectEq("le 3", @blort, Cmp.le(@blort, @blort));
+expectVoid("le 4", { Cmp.le(2, 1) });
+expectVoid("le 5", { Cmp.le(@foo, 3) });
+
+expectEq("lt 1", "a", Cmp.lt("a", "z"));
+expectEq("lt 2", false, Cmp.lt(false, 2));
+expectVoid("lt 3", { Cmp.lt(1, 1) });
+expectVoid("lt 4", { Cmp.lt(@foo, 1) });
+
+expectEq("perEq 1", "x", Cmp.perEq("x", "x"));
+expectEq("perEq 2", @blort, Cmp.perEq(@blort, @blort));
+expectVoid("perEq 3", { Cmp.perEq(1, 2) });
+
+expectEq("perNe 1", "x", Cmp.perNe("x", "y"));
+expectVoid("perNe 2", { Cmp.perNe(1, 1) });
+
+expectEq("perGe 1", "z", Cmp.perGe("z", "a"));
+expectEq("perGe 3", @blort, Cmp.perGe(@blort, @blort));
+expectVoid("perGe 3", { Cmp.perGe(1, 2) });
+
+expectEq("perGt 1", "z", Cmp.perGt("z", "a"));
+expectVoid("perGt 2", { Cmp.perGt(1, 1) });
+
+expectEq("perLe 1", "a", Cmp.perLe("a", "z"));
+expectEq("perLe 2", @blort, Cmp.perLe(@blort, @blort));
+expectVoid("perLe 3", { Cmp.perLe(2, 1) });
+
+expectEq("perLt 1", "a", Cmp.perLt("a", "z"));
+expectVoid("perLt 3", { Cmp.perLt(1, 1) });
+
+expectEq("order 1",  @same, Cmp.order(1, 1));
+expectEq("order 2",  @same, Cmp.order(@frotz, @frotz));
+expectEq("order 3",  @same, Cmp.order("x", "x"));
+expectEq("order 4",  @less, Cmp.order(10, 11));
+expectEq("order 5",  @less, Cmp.order(@frotz, @ztrof));
+expectEq("order 6",  @less, Cmp.order("xxx", "xxz"));
+expectEq("order 7",  @less, Cmp.order(false, "x"));
+expectEq("order 8",  @more, Cmp.order(1000, 1));
+expectEq("order 9",  @more, Cmp.order(@frotz, @fizmo));
+expectEq("order 10", @more, Cmp.order("xx", "x"));
+expectEq("order 11", @more, Cmp.order("xx", 10));
+
+note("All good.");

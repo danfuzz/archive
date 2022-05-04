@@ -1,0 +1,86 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Class definition: InternalResolver
+##
+## Payload:
+## * cache -- cache of resolved results
+## * nextResolver -- resolver to defer to when this one fails to resolve.
+## * path -- filesystem path to a directory of internal-access files.
+##
+
+import core.Io0;
+import core.LangNode;
+
+import Reader;
+
+import ./ResolverCache :: *;
+
+
+##
+## Class Definition
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+## Does direct resolution on the given `source`. Only ever called when
+## `source` is known to be `internal` and so *might* be found directly
+## in or under this resolver's directory.
+fn directResolve(self, source) {
+    def data = self.(ACCESS)();
+    def subPath = source::name;
+    def basePath = "\(data::path)/\(subPath)";
+    def infoPath = "\(basePath).saminfo";
+    def sourcePath = "\(basePath).sam";
+
+    return? if ($Io0::fileType(infoPath) == @file) {
+        ## We found a prefab info file. Read it!
+        def info = $Reader::readEvalExpression0(infoPath);
+        @module{info}
+    } else if ($Io0::fileType(sourcePath) == @file) {
+        ## We found a source file. Read it and resolve!
+        fn resolveFn(source) { return self.resolve(source) };
+        def tree = $Reader::readProgram(sourcePath, resolveFn);
+        def info = $LangNode::makeInfoTable(tree);
+        @module{info}
+    }
+};
+
+export class InternalResolver
+        access: ACCESS,
+        new: NEW {
+    class.new(path, nextResolver) {
+        return this.(NEW)(
+            @{
+                cache: ResolverCache.new(),
+                nextResolver,
+                path
+            })
+    };
+
+    .resolve(source) {
+        def data = this.(ACCESS)();
+
+        if (def found = data::cache.get(source)) {
+            ## `found` is always a list. See comment below.
+            return? found*
+        };
+
+        ## The result is always a list, so that we can cache a not-found
+        ## result as the empty list.
+        def result = (
+            source.hasName(@internal)
+                & directResolve(this, source)
+                | (data::nextResolver).resolve(source)
+        )?;
+
+        ## Cache the result, so we don't bother with a search the next time.
+        data::cache[source] := result;
+
+        return? result*
+    };
+};

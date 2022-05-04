@@ -1,0 +1,44 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Io0 demo
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import core.FilePath;
+import core.Io0;
+
+
+##
+## Private Definitions
+##
+
+## Checking file type / existence.
+fn tryFile(path) {
+    def result = If.or { $Io0::fileType(path) } { "(void)" };
+    note("fileType(", $Format::source(path), ") => ", $Format::source(result))
+};
+
+
+##
+## Main Tests
+##
+
+export fn main(selfPath, .*) {
+    def selfDir = $FilePath::get_directory(selfPath);
+
+    def text = $Io0::readFileUtf8(selfDir.cat("/sibling.txt"));
+    note(text);
+
+    tryFile(selfDir.cat("/sibling.txt"));
+    tryFile(selfDir.cat("/non-sibling.txt"));
+    tryFile(selfDir.cat("/nonexistent-directory/zorch.txt"));
+    tryFile(selfDir);
+
+    note();
+    note($Format::source($Io0::readDirectory(selfDir)));
+};

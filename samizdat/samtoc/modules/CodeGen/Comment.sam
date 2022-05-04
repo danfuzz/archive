@@ -1,0 +1,64 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Comment tree.
+##
+
+import ./CodeString :: *;
+import ./Wrapper :: *;
+import ./indentation :: *;
+
+
+##
+## Class Definition
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class Comment
+        access: ACCESS,
+        new: NEW {
+    class.new(text, optPayload?) {
+        return if (def payload = optPayload*) {
+            Wrapper.new(this.(NEW)(@{payload: CodeString.fix(payload), text}))
+        } else {
+            Wrapper.new(this.(NEW)(@{text}))
+        }
+    };
+
+    .flatten() {
+        def text = this.(ACCESS)(@text);
+
+        return (def payload = this.(ACCESS)(@payload))
+            & "/* \(text) */ \(payload.flatten())"
+            | "/* \(text) */"
+    };
+
+    .indent(level, maxColumns) {
+        def text = this.(ACCESS)(@text);
+        def prefix = INDENTATION[level];
+
+        return if (def payload = this.(ACCESS)(@payload)) {
+            "".cat(
+                prefix, "// ", text, "\n",
+                payload.indent(level, maxColumns)
+            )
+        } else {
+            "\(prefix)/* \(text) */"
+        }
+    };
+
+    .prefersFlat() {
+        def text = this.(ACCESS)(@text);
+
+        return? (#text < 30)
+            & (((def payload = this.(ACCESS)(@payload))
+                & payload.prefersFlat()?
+                | true?)*)
+            & this
+    };
+};

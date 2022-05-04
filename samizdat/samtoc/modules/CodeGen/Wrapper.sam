@@ -1,0 +1,57 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Outer wrapper for code-gen nodes.
+##
+## Payload:
+## * tree -- the main tree node
+## * flatBox -- box containing the flattened version, if created
+##
+
+import ./indentation :: *;
+
+
+##
+## Class Definition
+##
+
+## Secrets used to control access to this class.
+def ACCESS = @ACCESS.toUnlisted();
+def NEW = @NEW.toUnlisted();
+
+export class Wrapper
+        access: ACCESS,
+        new: NEW {
+    class.new(tree) {
+        def flat;
+        return this.(NEW)(@{tree, flatBox: flat?})
+    };
+
+    .flatten() {
+        def flatBox = this.(ACCESS)(@flatBox);
+
+        return flatBox*
+            | (flatBox* := this.(ACCESS)(@tree).flatten())
+    };
+
+    .indent(level, maxColumns) {
+        def tree = this.(ACCESS)(@tree);
+
+        if (tree.prefersFlat()) {
+            def flat = this.flatten();
+            def prefix = INDENTATION[level];
+            if ((#flat + #prefix) <= maxColumns) {
+                return prefix.cat(flat)
+            }
+        };
+
+        return tree.indent(level, maxColumns)
+    };
+
+    .prefersFlat() {
+        def tree = this.(ACCESS)(@tree);
+        return? tree.prefersFlat() & this;
+    };
+};

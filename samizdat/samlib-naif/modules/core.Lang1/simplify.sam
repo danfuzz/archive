@@ -1,0 +1,242 @@
+## Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+## Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+## Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+##
+## Samizdat Layer 1 Conversion / Simplification
+##
+## This includes code to strip out intermediate bindings in expression nodes.
+## It's a bit of a layering violation to remove them here, admittedly, but the
+## unsavory alternative is to do an entire separate tree walk to just do this
+## (at the end of parsing).
+##
+
+## This file is written in a subset of the language. See spec for details.
+#= language core.Lang0
+
+import core.Generator :: collectAll;
+import core.LangNode :: *;
+import core.Range :: OpenRange;
+
+
+##
+## Private Definitions
+##
+
+## The open range `(0..)`.
+def RANGE_0_ETC = OpenRange.new(0);
+
+## Does parser conversion of an expression or statement list.
+fn convertPexInList(nodes) {
+    return nodes.collect(convertPexIn)
+};
+
+## Converts a pex to a method call on its converted inner pex.
+fn makeCallPex(target, name, node, formals, moreArgs*) {
+    return makeCall(target, name, convertPex(node::pex, formals), moreArgs*)
+};
+
+## Makes a node with additional / replacement bindings from the original,
+## but *without* intermediate bindings.
+fn withFinalBindings(orig, more) {
+    return withoutIntermediates(orig).cat(more)
+};
+
+## Expands the given pex node into an expression node.
+fn convertPex(node, formals) {
+    return If.cases(
+        { node.get_name() },
+        @{
+            @any: { . ->
+                REFS::Peg_any
+            },
+
+            @choice: { . ->
+                def convertedPexes = node::pexes.collect
+                    { pex -> convertPex(pex, formals) };
+                makeCall(REFS::Peg_PegChoice, SYMS::new, convertedPexes*)
+            },
+
+            @code: { . ->
+                ## Use the lexical `formals` context to make a regular closure
+                ## node, and just convert that. As a special case, notice if
+                ## the closure is just a yield of a literal, and convert that
+                ## with `PegResult.new`.
+                def closurePayload = @{node*, formals};
+                def fullClosure = makeFullClosure(closurePayload);
+
+                If.andThenElse
+                    { Cmp.eq(fullClosure::statements, []) }
+                    { . -> fullClosure::yield.hasName(@literal) }
+                    { ., yNode ->
+                        makeCall(REFS::Peg_PegResult, SYMS::new, yNode)
+                    }
+                    {
+                        makeCall(REFS::Peg_PegCode, SYMS::new,
+                            convertPexIn(fullClosure))
+                    };
+            },
+
+            @empty: { . ->
+                REFS::Peg_empty
+            },
+
+            @lookaheadFailure: { . ->
+                makeCallPex(REFS::Peg_PegLookaheadFailure, SYMS::new,
+                    node, formals)
+            },
+
+            @lookaheadSuccess: { . ->
+                makeCallPex(REFS::Peg_PegLookaheadSuccess, SYMS::new,
+                    node, formals)
+            },
+
+            @opt: { . ->
+                makeCallPex(REFS::Peg_PegRepeat, SYMS::newOpt, node, formals)
+            },
+
+            @plus: { . ->
+                makeCallPex(REFS::Peg_PegRepeat, SYMS::newPlus, node, formals)
+            },
+
+            @sequence: { . ->
+                ## Extract the formals out of any `varDef` nodes.
+                def newFormals = node::pexes.collect { pex ->
+                    If.is { pex.hasName(@varDef) }
+                        { @formal{name: pex::name} }
+                        { @formal{} }
+                };
+
+                ## Convert all the pexes, passing in appropriately-extended
+                ## formals lists to each conversion.
+                def convertedPexes =
+                    collectAll(RANGE_0_ETC, node::pexes)
+                        { n, pex ->
+                            def subPex = If.is { pex.hasName(@varDef) }
+                                { pex::value }
+                                { pex };
+                            convertPex(subPex,
+                                [formals*, newFormals.sliceExclusive(0, n)*])
+                        };
+
+                makeCall(REFS::Peg_PegSequence, SYMS::new, convertedPexes*)
+            },
+
+            @star: { . ->
+                makeCallPex(REFS::Peg_PegRepeat, SYMS::newStar, node, formals)
+            },
+
+            @string: { . ->
+                makeCallLiterals(REFS::Peg_PegSequence, SYMS::newString,
+                    node::value)
+            },
+
+            @thunk: { . ->
+                ## Use the lexical `formals` context to make a regular closure
+                ## node, and just convert that.
+                def closure = makeFullClosure(@{
+                    formals,
+                    yield: makeMaybe(node::value)
+                });
+                def convertedClosure = convertPexIn(closure);
+
+                makeCall(REFS::Peg_PegThunk, SYMS::new, convertedClosure)
+            },
+
+            @token: { . ->
+                makeCallLiterals(REFS::Peg_PegSet, SYMS::new, node::value)
+            },
+
+            @tokenSet: { . ->
+                makeCallLiterals(REFS::Peg_PegSet, SYMS::new,
+                    node::values*)
+            },
+
+            @tokenSetComplement: { . ->
+                makeCallLiterals(REFS::Peg_PegSetComplement, SYMS::new,
+                    node::values*)
+            },
+
+            @varRef: { . ->
+                ## `varRef` in the context of a pex just translates to a
+                ## variable fetch of the same name in the context of an
+                ## expression / statement.
+                makeVarFetch(node::name)
+            }
+        })
+};
+
+## Converts a layer 1 expression or statement node into an equivalent layer
+## 0 node.
+fn convertPexIn(node) {
+    return If.cases(
+        { node.get_name() },
+        @{
+            @apply: { . ->
+                def target = convertPexIn(node::target);
+                def name = convertPexIn(node::name);
+                def values = convertPexIn(node::values);
+                withFinalBindings(node, @{target, name, values});
+            },
+
+            @call: { . ->
+                def target = convertPexIn(node::target);
+                def name = convertPexIn(node::name);
+                def values = convertPexInList(node::values);
+                withFinalBindings(node, @{target, name, values});
+            },
+
+            @closure: { . ->
+                def statements = convertPexInList(node::statements);
+                def yieldNode = convertPexIn(node::yield);
+                node.cat(@{statements, yield: yieldNode})
+            },
+
+            @fetch: { . ->
+                def target = convertPexIn(node::target);
+                withFinalBindings(node, @{target})
+            },
+
+            @parser: { . ->
+                ## This is where the juicy stuff happens!
+                makeCallPex(REFS::Peg_PegMain, SYMS::newSequence, node, [])
+            },
+
+            @store: { . ->
+                def target = convertPexIn(node::target);
+                def value = convertPexIn(node::value);
+                withFinalBindings(node, @{target, value})
+            },
+
+            @export:
+            @maybe:
+            @noYield:
+            @varDef: { . ->
+                node.cat(@{value: convertPexIn(node::value)})
+            },
+
+            @exportSelection:
+            @importModule:
+            @importModuleSelection:
+            @importResource:
+            @literal:
+            @varRef:
+            @void: { . ->
+                node
+            }
+        })
+};
+
+
+##
+## Exported Definitions
+##
+
+## Documented in spec.
+export fn simplify(expressionNode, resolveFn) {
+    def converted = convertPexIn(expressionNode);
+
+    return If.is { converted.hasName(@closure) }
+        { withModuleDefs(withResolvedImports(converted, resolveFn)) }
+        { converted }
+};

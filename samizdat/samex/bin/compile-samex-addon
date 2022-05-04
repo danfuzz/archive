@@ -1,0 +1,121 @@
+#!/bin/bash
+#
+# Copyright 2013-2015 the Samizdat Authors (Dan Bornstein et alia).
+# Licensed AS IS and WITHOUT WARRANTY under the Apache License,
+# Version 2.0. Details: <http://www.apache.org/licenses/LICENSE-2.0>
+
+
+#
+# General setup
+#
+
+# Set `progName` to the program name, `progDir` to its directory, and `baseDir`
+# to `progDir`'s directory. Follows symlinks.
+function init-prog {
+    local newp p="$0"
+
+    while newp="$(readlink "$p")"; do
+        [[ ${newp} =~ ^/ ]] && p="${newp}" || p="$(dirname "$p")/${newp}"
+    done
+
+    progName="${p##*/}"
+    progDir="$(cd "$(dirname "$p")"; /bin/pwd -P)"
+    baseDir="$(cd "${progDir}/.."; /bin/pwd -P)"
+}
+
+init-prog
+
+
+#
+# Argument parsing
+#
+
+# Preferred runtime name option.
+runtimeOpt=()
+
+# Output file name.
+outputFile=''
+
+while [[ $1 != '' ]]; do
+    opt="$1"
+    if [[ ${opt} == '--' ]]; then
+        shift
+        break
+    elif [[ ${opt} == '--help' ]]; then
+        echo "${progName} [--runtime=<name>] [--output=<path>]"
+        echo "    <source-path> ..."
+        exit
+    elif [[ ${opt} =~ ^--runtime= ]]; then
+        runtimeOpt=("${opt}")
+    elif [[ ${opt} =~ ^--output=(.*) ]]; then
+        outputFile="${BASH_REMATCH[1]}"
+    elif [[ ${opt} =~ ^- ]]; then
+        echo "Unknown option: ${opt}" 1>&2
+        exit 1
+    else
+        break
+    fi
+    shift
+done
+unset opt
+
+if [[ ${outputFile} == '' ]]; then
+    if [[ "$#" == 1 ]]; then
+        # Use the sole file name as the basis for the output name.
+        outputFile="${1%.c}.samb"
+    else
+        echo 'Missing --output option.' 1>&2
+        exit 1
+    fi
+fi
+
+
+#
+# Main script
+#
+
+includeDir="$("${baseDir}/helper/find-samex" "${runtimeOpt[@]}" --include)"
+if [[ $? != 0 ]]; then
+    exit 1
+fi
+
+# Set `$CC` to `"cc"` if it's not already set.
+if [[ ${CC} == '' ]]; then
+    CC='cc'
+fi
+
+# Figure out what OS we have, and set up build commands accordingly. See the
+# build code in <https://github.com/danfuzz/dl-example> for details about all
+# the compiler options.
+
+if [[ ${OSTYPE} == '' ]]; then
+    OSTYPE="$(uname)"
+fi
+
+case "${OSTYPE}" in
+    (linux* | Linux*)
+        WHAT_OS='linux'
+    ;;
+    (darwin* | Darwin* | *bsd* | *BSD*)
+        WHAT_OS='bsd'
+    ;;
+    (*)
+        echo 1>&2 "Sorry: Unknown OS type: ${OSTYPE}"
+        exit 1
+    ;;
+esac
+
+COMPILE_CMD=("${CC}" -g -I"${includeDir}")
+
+case "${WHAT_OS}" in
+    (bsd)
+        COMPILE_CMD+=(-dynamiclib -undefined dynamic_lookup)
+    ;;
+    (linux)
+        COMPILE_CMD+=(-fPIC -shared -Ur)
+    ;;
+esac
+
+# Do the compiling.
+
+"${COMPILE_CMD[@]}" -o "${outputFile}" "$@"
