@@ -1,0 +1,8 @@
+/muffin {
+/muffin/@type {
+/muffin/@type - corn
+/muffin/@type }
+/muffin/@variant {
+/muffin/@variant - buttery
+/muffin/@variant }
+/muffin }

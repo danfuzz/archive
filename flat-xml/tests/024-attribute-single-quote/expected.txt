@@ -1,0 +1,5 @@
+/fun {
+/fun/@amount {
+/fun/@amount - moderate
+/fun/@amount }
+/fun }

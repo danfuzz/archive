@@ -1,0 +1,5 @@
+/igram {
+/igram/@color {
+/igram/@color - purple
+/igram/@color }
+/igram }

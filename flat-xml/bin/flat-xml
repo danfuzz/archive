@@ -1,0 +1,460 @@
+#!/bin/bash
+#
+# Copyright 2013 Dan Bornstein, <danfuzz@milk.com>.
+# Licensed under the Apache License, Version 2.0.
+# <http://www.apache.org/licenses/LICENSE-2.0>
+#
+
+#
+# A minimal(ish) XML flattener for use with other scripting tools.
+#
+# See <https://github.com/danfuzz/flat-xml> for more details.
+#
+
+progVersion='0.2.2'
+progCopyright='Copyright 2013 Dan Bornstein, <danfuzz@milk.com>.'
+progUrl='<https://github.com/danfuzz/flat-xml>'
+
+
+#
+# Directory and program name detection
+#
+
+# Preserve the original working dir as origDir.
+origDir="${PWD}"
+
+# Set progName to the program name, progDir to its directory, and baseDir
+# to progDir's directory. Follows symlinks.
+prog="$0"
+while [[ -h ${prog} ]]; do
+    [[ "$(/bin/ls -ld "${prog}")" =~ .*' -> '(.*)$ ]]
+    newProg="${BASH_REMATCH[1]}"
+    if [[ ${newProg} =~ ^/ ]]; then
+        prog="${newProg}"
+    else
+        prog="$(dirname "${prog}")/${newProg}"
+    fi
+done
+progName="$(basename "${prog}")"
+progDir="$(dirname "${prog}")"
+cd "${progDir}"
+progDir="${PWD}"
+cd ..
+baseDir="${PWD}"
+cd "${origDir}"
+unset prog
+unset newProg
+
+
+#
+# Argument parsing
+#
+
+while [[ $1 != '' ]]; do
+    opt="$1"
+    if [[ ${opt} == '--' ]]; then
+        shift
+        break
+    elif [[ ${opt} == '--help' ]]; then
+        echo "${progName} [<file-name> ...]"
+        exit
+    elif [[ ${opt} == '--version' ]]; then
+        echo "${progName} ${progVersion}"
+        echo ''
+        echo "${progCopyright}"
+        echo "${progUrl}"
+        exit
+    elif [[ ${opt} =~ ^- ]]; then
+        echo "Unknown option: ${opt}" 1>&2
+        exit 1
+    else
+        break
+    fi
+    shift
+done
+unset opt
+
+
+#
+# Helper functions
+#
+
+# Performs flattening on one file.
+function doFlatten {
+    local file="$1"
+
+    awk '
+
+    BEGIN {
+        SINGLE_QUOTE = "\x27";
+        ENTITIES["amp"] = "&";
+        ENTITIES["apos"] = SINGLE_QUOTE;
+        ENTITIES["gt"] = ">";
+        ENTITIES["lt"] = "<";
+        ENTITIES["quot"] = "\"";
+
+        lineCount = 0;
+        lineAt = 1;
+        colAt = 1;
+        peekBuf = "";
+        tagDepth = 0;
+        tags[0] = "";
+    }
+
+    # Read in the whole file. Processing is done after reading, by recursive
+    # descent.
+    {
+        lineCount++;
+        lines[lineCount] = $0 "\n";
+    }
+
+    END {
+        doFile();
+    }
+
+    # die(msg): Die with message.
+    function die(msg) {
+        printf("%d [%s]: %s\n", lineAt, peek(10), msg) > "/dev/stderr";
+        exit 1;
+    }
+
+    # pushTag(tag): Pushes a new tag (or attribute, processing instruction, or
+    # directive) onto the stack.
+    function pushTag(tag) {
+        tags[tagDepth + 1] = tags[tagDepth] "/" tag;
+        tagDepth++;
+    }
+
+    # popTag(): Pops the topmost tag off the stack.
+    function popTag() {
+        tagDepth--;
+    }
+
+    # emit(action, value): Emits a (sequence of) standard-form line(s)
+    # consisting of two or three space-separated fields. Fields are
+    # the current path, an "action" identifier, and an optional
+    # value. If the value is non-empty and contains any newlines, then
+    # this emits one more line than there are newlines, with all but
+    # the last using an action of "+" instead of the specified action.
+    function emit(action, value, lines, count, i) {
+        if (value == "") {
+            printf("%s %s\n", tags[tagDepth], action);
+            return;
+        }
+
+        count = split(value, lines, /\n/);
+        for (i = 1; i <= count; i++) {
+            printf("%s %s%s%s\n",
+                tags[tagDepth],
+                (i == count) ? action : "+",
+                (lines[i] == "") ? "" : " ",
+                lines[i]);
+        }
+    }
+
+    # peek(len): Peeks at the len count (defaults to 1) of characters
+    # starting at the next character ahead.
+    function peek(len, l, p) {
+        if (len == 0) {
+            len = 1;
+        }
+
+        while ((length(peekBuf) < len) && (lineAt <= lineCount)) {
+            l = lines[lineAt];
+            p = substr(l, colAt, 1);
+            peekBuf = peekBuf p;
+            colAt++;
+            if (p == "\n") {
+                lineAt++;
+                colAt = 1;
+            }
+        }
+
+        return substr(peekBuf, 1, len);
+    }
+
+    # eof(): Returns whether or not we are at eof.
+    function eof() {
+        return (peek() == "");
+    }
+
+    # read(len): Reads len (defaults to 1) character(s).
+    function read(len, result) {
+        if (len == 0) {
+            len = 1;
+        }
+
+        result = peek(len);
+
+        if (result != "") {
+            peekBuf = substr(peekBuf, len + 1);
+        }
+
+        return result;
+    }
+
+    # readString(str): Reads length(str) and verifies that it is == str.
+    function readString(str, s) {
+        s = read(length(str));
+        if (s != str) {
+            die("Expected \"" str "\". Got \"" s "\".");
+        }
+    }
+
+    # readName(): Reads a valid name.
+    function readName(result) {
+        result = read();
+
+        if (match(result, /[:a-zA-Z0-9]/) == 0) {
+            die("Illegal name start character: \"" result "\"");
+        }
+
+        for (;;) {
+            if (match(peek(), /[-.:a-zA-Z0-9]/) == 0) {
+                break;
+            }
+            result = result read();
+        }
+
+        return result;
+    }
+
+    # readEntity(): Reads an entity. Assumes "&" has already been read.
+    # Returns the converted string.
+    function readEntity(name, c) {
+        name = "";
+        for (;;) {
+            c = read();
+            if (c == ";") {
+                break;
+            } else if (c == "") {
+                die("EOF in the middle of entity.");
+            }
+            name = name c;
+        }
+
+        if (name in ENTITIES) {
+            return ENTITIES[name];
+        }
+
+        die("Unknown entity: \"" name "\"");
+    }
+
+    # readQuotedString(): Reads a quoted string.
+    function readQuotedString(result, c, delim) {
+        delim = peek();
+        result = "";
+
+        if ((delim != "\"") && (delim != SINGLE_QUOTE)) {
+            die("Expected a quote (single or double).");
+        }
+
+        read();
+
+        for (;;) {
+            c = read();
+            if (c == delim) {
+                break;
+            } else if (c == "&") {
+                c = readEntity();
+            } else if (c == ">") {
+                die("Invalid placement of \">\" in quoted value.");
+            } else if (c == "") {
+                die("EOF in the middle of quoted string.");
+            }
+            result = result c;
+        }
+
+        return result;
+    }
+
+    # doFile()
+    function doFile() {
+        for (;;) {
+            doWhitespaceAndComments();
+            if (eof()) {
+                break;
+            }
+            doTagOrMeta();
+        }
+    }
+
+    # doWhitespace()
+    function doWhitespace(c) {
+        for (;;) {
+            c = peek();
+            if ((c == " ") || (c == "\n") || (c == "\r") || (c == "\t")) {
+                read();
+            } else {
+                break;
+            }
+        }
+    }
+
+    # doComment()
+    function doPossibleComment() {
+        if (peek(4) != "<!--") {
+            return 0;
+        }
+        read(4);
+
+        for (;;) {
+            if (peek(3) == "-->") {
+                read(3);
+                break;
+            }
+            read();
+        }
+
+        return 1;
+    }
+
+    # doWhitespaceAndComments()
+    function doWhitespaceAndComments() {
+        for (;;) {
+            doWhitespace();
+            if (!doPossibleComment()) {
+                break;
+            }
+        }
+    }
+
+    # doTagOrMeta()
+    function doTagOrMeta(type) {
+        doWhitespaceAndComments();
+
+        # Also would do directives `<!` and CDATA here.
+        if (peek(2) == "<?") {
+            doProcessingInstruction();
+        } else if (peek() == "<") {
+            doTag();
+        } else {
+            die("Expected tag or directive");
+        }
+    }
+
+    # doProcessingInstruction()
+    function doProcessingInstruction() {
+        readString("<?");
+
+        doWhitespace();
+
+        pushTag("?" readName());
+        emit("{");
+
+        for (;;) {
+            doWhitespace();
+            if (peek(2) == "?>") {
+                read(2);
+                break;
+            }
+            doAttribute();
+        }
+
+        emit("}");
+        popTag();
+    }
+
+    # doTag()
+    function doTag(s, shortForm, closer, closerLen) {
+        readString("<");
+
+        s = readName();
+        pushTag(s);
+        emit("{");
+
+        shortForm = 0;
+        for (;;) {
+            doWhitespace();
+            if (peek(2) == "/>") {
+                read(2);
+                shortForm = 1;
+                break;
+            } else if (peek() == ">") {
+                read();
+                break;
+            }
+            doAttribute();
+        }
+
+        if (!shortForm) {
+            closer = "</" s ">";
+            closerLen = length(closer);
+            while (peek(closerLen) != closer) {
+                doTagOrMetaOrData();
+            }
+            readString(closer);
+        }
+
+        emit("}");
+        popTag();
+    }
+
+    # doAttribute()
+    function doAttribute() {
+        pushTag("@" readName());
+        emit("{");
+        doWhitespace();
+        readString("=");
+        doWhitespace();
+        emit("-", readQuotedString());
+        emit("}");
+        popTag();
+    }
+
+    # doTagOrMetaOrData()
+    function doTagOrMetaOrData() {
+        if (doPossibleComment()) {
+            return;
+        }
+
+        if (peek() == "<") {
+            if (peek(2) == "</") {
+                die("Unexpected close tag.");
+            }
+            doTagOrMeta();
+        } else {
+            doData();
+        }
+    }
+
+    # doData()
+    function doData(result) {
+        result = "";
+
+        for (;;) {
+            p = peek();
+            if (p == "<") {
+                break;
+            } else if (p == "&") {
+                read();
+                result = result readEntity();
+            } else if (p == ">") {
+                die("Invalid placement of \">\" in data section.");
+            } else if (p == "") {
+                die("EOF in the middle of data section.");
+            } else {
+                result = result p;
+                read();
+            }
+        }
+
+        emit("-", result);
+    }
+    ' "${file}"
+}
+
+
+#
+# Main script
+#
+
+for file in "$@"; do
+    doFlatten "${file}" || exit 1
+done
+
+# Read stdin if no files are explicitly listed. Note that awk (both
+# gnu and bsd variants) recognize the file name "-" to mean stdin.
+if [[ $# == '0' ]]; then
+    doFlatten - || exit 1
+fi

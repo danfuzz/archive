@@ -1,0 +1,8 @@
+/curse {
+/curse/@symbols {
+/curse/@symbols - <"&'>
+/curse/@symbols }
+/curse/@words {
+/curse/@words - durn & dagnabbit
+/curse/@words }
+/curse }
