@@ -1,0 +1,7 @@
+#!/bin/sh
+
+rm -rf classes copyrighter.jar
+mkdir classes
+javac -d classes src/*.java
+cd classes
+jar cfm ../copyrighter.jar ../manifest.txt *
